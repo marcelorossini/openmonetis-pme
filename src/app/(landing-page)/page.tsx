@@ -9,7 +9,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { AnimateOnScroll } from "@/features/landing/components/animate-on-scroll";
 import { MobileNav } from "@/features/landing/components/mobile-nav";
-import { ScreenshotTabs } from "@/features/landing/components/screenshot-tabs";
 import { SetupTabs } from "@/features/landing/components/setup-tabs";
 import {
 	companionBanks,
@@ -51,19 +50,19 @@ export default async function Page() {
 			{/* Navigation */}
 			<NavbarShell>
 				{/* Center Navigation Links */}
-				<nav className="hidden md:flex items-center gap-1 absolute left-1/2 -translate-x-1/2">
+				<nav className="hidden md:flex items-center gap-1 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
 					{navLinks.map(({ href, label }) => (
-						<a
+						<Link
 							key={href}
 							href={href}
-							className="rounded-md px-2 py-1.5 text-sm font-medium text-black/75 hover:text-black hover:bg-black/10 transition-colors dark:text-white/75 dark:hover:text-white dark:hover:bg-white/10"
+							className="inline-flex h-9 items-center justify-center rounded-md px-2 text-sm font-medium leading-none text-primary-foreground/75 transition-colors hover:bg-primary-foreground/10 hover:text-primary-foreground dark:text-white/75 dark:hover:bg-white/10 dark:hover:text-white"
 						>
 							{label}
-						</a>
+						</Link>
 					))}
 				</nav>
 
-				<nav className="ml-auto flex items-center gap-2 md:gap-3">
+				<nav className="ml-auto flex items-center gap-1">
 					<AnimatedThemeToggler variant="navbar" />
 					{!isPublicDomain &&
 						(session?.user ? (
@@ -71,26 +70,27 @@ export default async function Page() {
 								<Button
 									variant="navbar"
 									size="sm"
-									className="border border-black/20 dark:border-white/20"
+									className="h-9 text-primary-foreground/75 hover:bg-primary-foreground/10 hover:text-primary-foreground shadow-none dark:text-white/75 dark:hover:bg-white/10 dark:hover:text-white"
 								>
 									Dashboard
 								</Button>
 							</Link>
 						) : (
-							<div className="hidden md:flex items-center gap-2">
+							<div className="hidden md:flex items-center gap-1">
 								<Link href="/login">
 									<Button
 										variant="ghost"
 										size="sm"
-										className="text-black/75 hover:bg-black/10 hover:text-black shadow-none dark:text-white/75 dark:hover:bg-white/10 dark:hover:text-white"
+										className="h-9 text-primary-foreground/75 hover:bg-primary-foreground/10 hover:text-primary-foreground shadow-none dark:text-white/75 dark:hover:bg-white/10 dark:hover:text-white"
 									>
 										Entrar
 									</Button>
 								</Link>
 								<Link href="/signup">
 									<Button
+										variant="ghost"
 										size="sm"
-										className="bg-black/10 border border-black/20 text-black shadow-none hover:bg-black/20 gap-2 dark:bg-white/10 dark:border-white/20 dark:text-white dark:hover:bg-white/20"
+										className="h-9 text-primary-foreground/75 hover:bg-primary-foreground/10 hover:text-primary-foreground shadow-none dark:text-white/75 dark:hover:bg-white/10 dark:hover:text-white"
 									>
 										Começar
 									</Button>
@@ -203,31 +203,6 @@ export default async function Page() {
 								</div>
 							))}
 						</div>
-					</div>
-				</div>
-			</section>
-
-			{/* Screenshots Gallery Section */}
-			<section id="telas" className="py-12 md:py-24">
-				<div className="max-w-8xl mx-auto px-4">
-					<div className="mx-auto max-w-6xl">
-						<AnimateOnScroll>
-							<div className="text-center mb-8 md:mb-12">
-								<Badge variant="outline" className="mb-4">
-									Conheça as telas
-								</Badge>
-								<h2 className="text-2xl sm:text-3xl md:text-4xl mb-3 md:mb-4 font-semibold">
-									Veja o que você pode fazer
-								</h2>
-								<p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto px-4 sm:px-0">
-									Explore as principais telas do OpenMonetis
-								</p>
-							</div>
-						</AnimateOnScroll>
-
-						<AnimateOnScroll>
-							<ScreenshotTabs />
-						</AnimateOnScroll>
 					</div>
 				</div>
 			</section>

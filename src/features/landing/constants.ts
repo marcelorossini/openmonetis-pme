@@ -36,7 +36,6 @@ export type FeatureItem = {
 };
 
 export const navLinks = [
-	{ href: "#telas", label: "Conheça as telas" },
 	{ href: "#funcionalidades", label: "Funcionalidades" },
 	{ href: "#mobile", label: "Mobile" },
 	{ href: "#stack", label: "Stack" },
@@ -159,22 +158,6 @@ export const pwaHighlights: FeatureItem[] = [
 		colorVar: "var(--data-4)",
 	},
 ];
-
-export const pwaCompatList = [
-	{
-		label: "Android",
-		description:
-			"Chrome e Edge — instale pelo banner ou pelo menu do navegador",
-	},
-	{
-		label: "iOS / iPadOS",
-		description: "Safari — adicione à tela inicial pelo menu compartilhar",
-	},
-	{
-		label: "Desktop",
-		description: "Chrome, Edge e outros — instale pela barra de endereço",
-	},
-] as const;
 
 export const companionSteps: FeatureItem[] = [
 	{

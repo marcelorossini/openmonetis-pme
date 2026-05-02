@@ -13,7 +13,6 @@ import {
 } from "@/shared/components/ui/sheet";
 
 const navLinks = [
-	{ href: "#telas", label: "Conheça as telas" },
 	{ href: "#funcionalidades", label: "Funcionalidades" },
 	{ href: "#mobile", label: "Mobile" },
 	{ href: "#stack", label: "Stack" },
