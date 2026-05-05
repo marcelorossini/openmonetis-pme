@@ -127,21 +127,20 @@ Só quer rodar o OpenMonetis. **Não precisa clonar o repositório nem instalar 
 # 1. Baixe o compose
 curl -fsSL https://raw.githubusercontent.com/felipegcoutinho/openmonetis/main/docker-compose.yml -o docker-compose.yml
 
-# 2. Suba tudo
+# 2. Crie um .en na mesma pasta.
+# .env mínimo recomendado para produção
+BETTER_AUTH_SECRET=gere-um-valor-com-openssl-rand-base64-32
+BETTER_AUTH_URL=http://seu-dominio.com
+
+# 3. Suba tudo
 docker compose up -d
 ```
 
 Acesse em: `http://localhost:3000`
 
-O banco sobe com credenciais padrão. Para personalizar (senha, Google OAuth, e-mail, IA...), crie um `.env` na mesma pasta **antes** de subir:
+O banco sobe com credenciais padrão. Para personalizar (senha, Google OAuth, e-mail, IA...), crie um `.env` na mesma pasta **antes** de subir.
 
-```bash
-# .env mínimo recomendado para produção
-BETTER_AUTH_SECRET=gere-um-valor-com-openssl-rand-base64-32
-BETTER_AUTH_URL=https://seu-dominio.com
-```
-
-Veja todas as variáveis disponíveis em [Variáveis de Ambiente](#-variáveis-de-ambiente).
+Mais sobre .env em [Variáveis de Ambiente](#-variáveis-de-ambiente).
 
 **Banco remoto (Supabase, Neon, Railway...):** defina `DATABASE_URL` no `.env` e suba só o app:
 
@@ -560,12 +559,6 @@ Outras formas de contribuir: ⭐ estrela no repo, reportar bugs, melhorar docs, 
 - 📋 Crédito ao autor, indicar modificações, mesma licença
 
 Para o texto legal completo, consulte o arquivo [LICENSE](LICENSE) ou visite [creativecommons.org](https://creativecommons.org/licenses/by-nc-sa/4.0/deed.pt).
-
----
-
-## 🙏 Agradecimentos
-
-[Next.js](https://nextjs.org/) · [Better Auth](https://better-auth.com/) · [Drizzle ORM](https://orm.drizzle.team/) · [shadcn/ui](https://ui.shadcn.com/) · [Biome](https://biomejs.dev/) · [Vercel](https://vercel.com/)
 
 ---
 
