@@ -1,6 +1,10 @@
 "use client";
 
-import { RiAddCircleFill, RiDeleteBinLine } from "@remixicon/react";
+import {
+	RiAddCircleFill,
+	RiCheckLine,
+	RiDeleteBinLine,
+} from "@remixicon/react";
 import {
 	type ReactNode,
 	useEffect,
@@ -69,10 +73,13 @@ export function NoteDialog({
 	const [isPending, startTransition] = useTransition();
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 	const [newTaskText, setNewTaskText] = useState("");
+	const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+	const [editingTaskText, setEditingTaskText] = useState("");
 
 	const titleRef = useRef<HTMLInputElement>(null);
 	const descRef = useRef<HTMLTextAreaElement>(null);
 	const newTaskRef = useRef<HTMLInputElement>(null);
+	const editingTaskRef = useRef<HTMLInputElement>(null);
 
 	const [dialogOpen, setDialogOpen] = useControlledState(
 		open,
@@ -90,6 +97,8 @@ export function NoteDialog({
 			resetForm(buildInitialValues(note));
 			setErrorMessage(null);
 			setNewTaskText("");
+			setEditingTaskId(null);
+			setEditingTaskText("");
 			requestAnimationFrame(() => titleRef.current?.focus());
 		}
 	}, [dialogOpen, note, resetForm]);
@@ -126,7 +135,12 @@ export function NoteDialog({
 		formState.description.trim() === (note?.description ?? "").trim() &&
 		JSON.stringify(formState.tasks) === JSON.stringify(note?.tasks);
 
-	const disableSubmit = isPending || onlySpaces || unchanged || invalidLen;
+	const disableSubmit =
+		isPending ||
+		onlySpaces ||
+		unchanged ||
+		invalidLen ||
+		Boolean(editingTaskId);
 
 	const handleOpenChange = (v: boolean) => {
 		setDialogOpen(v);
@@ -159,6 +173,10 @@ export function NoteDialog({
 			"tasks",
 			(formState.tasks || []).filter((t) => t.id !== taskId),
 		);
+		if (editingTaskId === taskId) {
+			setEditingTaskId(null);
+			setEditingTaskText("");
+		}
 	};
 
 	const handleToggleTask = (taskId: string) => {
@@ -168,6 +186,40 @@ export function NoteDialog({
 				t.id === taskId ? { ...t, completed: !t.completed } : t,
 			),
 		);
+	};
+
+	const handleStartEditTask = (task: Task) => {
+		if (isPending) return;
+
+		setEditingTaskId(task.id);
+		setEditingTaskText(task.text);
+		requestAnimationFrame(() => {
+			editingTaskRef.current?.focus();
+			editingTaskRef.current?.select();
+		});
+	};
+
+	const handleSaveTask = (taskId: string) => {
+		const text = normalize(editingTaskText);
+		if (!text) {
+			toast.error("O texto da tarefa não pode estar vazio.");
+			editingTaskRef.current?.focus();
+			return;
+		}
+
+		updateField(
+			"tasks",
+			(formState.tasks || []).map((t) =>
+				t.id === taskId ? { ...t, text } : t,
+			),
+		);
+		setEditingTaskId(null);
+		setEditingTaskText("");
+	};
+
+	const handleCancelEditTask = () => {
+		setEditingTaskId(null);
+		setEditingTaskText("");
 	};
 
 	const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -373,33 +425,78 @@ export function NoteDialog({
 											key={task.id}
 											className="flex items-center gap-3 rounded-md px-3 py-1.5 hover:bg-muted/50"
 										>
-											<Checkbox
-												className="data-[state=checked]:bg-success! data-[state=checked]:border-success! data-[state=checked]:text-success-foreground!"
-												checked={task.completed}
-												onCheckedChange={() => handleToggleTask(task.id)}
-												disabled={isPending}
-												aria-label={`Marcar "${task.text}" como ${
-													task.completed ? "não concluída" : "concluída"
-												}`}
-											/>
-											<span
-												className={cn(
-													"flex-1 text-sm wrap-break-word",
-													task.completed
-														? "text-muted-foreground line-through"
-														: "text-foreground",
-												)}
-											>
-												{task.text}
-											</span>
+											{editingTaskId === task.id ? (
+												<Input
+													ref={editingTaskRef}
+													value={editingTaskText}
+													onChange={(e) => setEditingTaskText(e.target.value)}
+													onKeyDown={(e) => {
+														if (e.key === "Enter") {
+															e.preventDefault();
+															e.stopPropagation();
+															handleSaveTask(task.id);
+														}
+														if (e.key === "Escape") {
+															e.preventDefault();
+															e.stopPropagation();
+															handleCancelEditTask();
+														}
+													}}
+													disabled={isPending}
+													className="h-8 min-w-0 flex-1"
+													aria-label={`Editar "${task.text}"`}
+												/>
+											) : (
+												<>
+													<Checkbox
+														className="data-[state=checked]:bg-success! data-[state=checked]:border-success! data-[state=checked]:text-success-foreground!"
+														checked={task.completed}
+														onCheckedChange={() => handleToggleTask(task.id)}
+														disabled={isPending}
+														aria-label={`Marcar "${task.text}" como ${
+															task.completed ? "não concluída" : "concluída"
+														}`}
+													/>
+													<button
+														type="button"
+														onClick={() => handleStartEditTask(task)}
+														disabled={isPending}
+														className={cn(
+															"min-w-0 flex-1 cursor-text text-left text-sm wrap-break-word transition-colors hover:text-primary disabled:cursor-not-allowed",
+															task.completed
+																? "text-muted-foreground line-through"
+																: "text-foreground",
+														)}
+													>
+														{task.text}
+													</button>
+												</>
+											)}
 											<button
 												type="button"
-												onClick={() => handleRemoveTask(task.id)}
+												onClick={() =>
+													editingTaskId === task.id
+														? handleSaveTask(task.id)
+														: handleRemoveTask(task.id)
+												}
 												disabled={isPending}
-												className="shrink-0 text-muted-foreground/50 hover:text-destructive transition-colors"
-												aria-label={`Remover "${task.text}"`}
+												className={cn(
+													"shrink-0 transition-colors",
+													editingTaskId === task.id
+														? "text-success hover:text-success/80"
+														: "text-muted-foreground/50 hover:text-destructive",
+												)}
+												aria-label={
+													editingTaskId === task.id
+														? `Salvar "${task.text}"`
+														: `Remover "${task.text}"`
+												}
 											>
-												<RiDeleteBinLine className="h-3.5 w-3.5" />
+												{editingTaskId === task.id ? (
+													<RiCheckLine className="h-4 w-4" />
+												) : (
+													<RiDeleteBinLine className="h-3.5 w-3.5" />
+												)}
 											</button>
 										</div>
 									))}
