@@ -10,9 +10,9 @@ import {
 import {
 	currencyFormatter,
 	formatCondition,
-	formatDate,
 	formatPeriod,
 } from "@/features/transactions/lib/formatting-helpers";
+import { EstablishmentLogo } from "@/shared/components/entity-avatar";
 import { TransactionTypeBadge } from "@/shared/components/transaction-type-badge";
 import {
 	Avatar,
@@ -34,7 +34,7 @@ import { Separator } from "@/shared/components/ui/separator";
 import { resolveLogoSrc } from "@/shared/lib/logo";
 import { getAvatarSrc } from "@/shared/lib/payers/utils";
 import { getCategoryColorFromName } from "@/shared/utils/category-colors";
-import { parseLocalDateString } from "@/shared/utils/date";
+import { formatDate, parseLocalDateString } from "@/shared/utils/date";
 import { getIconComponent, getPaymentMethodIcon } from "@/shared/utils/icons";
 import { AttachmentSection } from "../attachments/attachment-section";
 import { InstallmentTimeline } from "../shared/installment-timeline";
@@ -55,10 +55,9 @@ export function TransactionDetailsDialog({
 }: TransactionDetailsDialogProps) {
 	const [attachmentCount, setAttachmentCount] = useState<number | null>(null);
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: transaction?.id é trigger intencional para reset do contador
 	useEffect(() => {
 		setAttachmentCount(null);
-	}, [transaction?.id]);
+	}, []);
 
 	if (!transaction) return null;
 
@@ -87,11 +86,16 @@ export function TransactionDetailsDialog({
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="min-w-0 overflow-x-hidden sm:max-w-xl">
-				<DialogHeader>
-					<DialogTitle>{transaction.name}</DialogTitle>
-					<DialogDescription>
-						{formatDate(transaction.purchaseDate)}
-					</DialogDescription>
+				<DialogHeader className="text-left">
+					<div className="flex min-w-0 items-start gap-2">
+						<EstablishmentLogo size={40} name={transaction.name} />
+						<div className="min-w-0">
+							<DialogTitle className="truncate">{transaction.name}</DialogTitle>
+							<DialogDescription className="mt-1">
+								{formatDate(transaction.purchaseDate)}
+							</DialogDescription>
+						</div>
+					</div>
 				</DialogHeader>
 
 				<div className="min-w-0 max-h-[60vh] overflow-x-hidden overflow-y-auto text-sm">

@@ -1,13 +1,18 @@
 "use client";
 
 import { RiAttachment2, RiCloseLine } from "@remixicon/react";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 import {
 	ALLOWED_MIME_TYPES,
 	DEFAULT_MAX_FILE_SIZE_MB,
 } from "@/features/transactions/lib/attachments-config";
 import { Button } from "@/shared/components/ui/button";
+import {
+	getFilesFromClipboard,
+	isTextEditingTarget,
+	validateAttachmentFile,
+} from "./attachment-file-utils";
 
 interface AttachmentFilePickerProps {
 	files: File[];
@@ -22,8 +27,17 @@ export function AttachmentFilePicker({
 	onRemove,
 	maxSizeMb = DEFAULT_MAX_FILE_SIZE_MB,
 }: AttachmentFilePickerProps) {
-	const maxFileSizeBytes = maxSizeMb * 1024 * 1024;
 	const inputRef = useRef<HTMLInputElement>(null);
+
+	function addFile(file: File) {
+		const validation = validateAttachmentFile(file, maxSizeMb);
+		if (!validation.ok) {
+			toast.error(validation.error);
+			return;
+		}
+
+		onAdd(file);
+	}
 
 	function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
 		const selected = e.target.files?.[0];
@@ -31,24 +45,35 @@ export function AttachmentFilePicker({
 
 		if (!selected) return;
 
-		if (
-			!ALLOWED_MIME_TYPES.includes(
-				selected.type as (typeof ALLOWED_MIME_TYPES)[number],
-			)
-		) {
-			toast.error(
-				"Tipo de arquivo não suportado. Use PDF ou imagem (JPEG, PNG, WebP).",
-			);
-			return;
-		}
-
-		if (selected.size > maxFileSizeBytes) {
-			toast.error(`O arquivo deve ter no máximo ${maxSizeMb}MB.`);
-			return;
-		}
-
-		onAdd(selected);
+		addFile(selected);
 	}
+
+	function handlePaste(event: React.ClipboardEvent<HTMLButtonElement>) {
+		const pastedFiles = getFilesFromClipboard(event);
+		if (pastedFiles.length === 0) return;
+
+		event.preventDefault();
+		for (const file of pastedFiles) {
+			addFile(file);
+		}
+	}
+
+	useEffect(() => {
+		function handleDocumentPaste(event: ClipboardEvent) {
+			if (isTextEditingTarget(event.target)) return;
+
+			const pastedFiles = getFilesFromClipboard(event);
+			if (pastedFiles.length === 0) return;
+
+			event.preventDefault();
+			for (const file of pastedFiles) {
+				addFile(file);
+			}
+		}
+
+		document.addEventListener("paste", handleDocumentPaste);
+		return () => document.removeEventListener("paste", handleDocumentPaste);
+	});
 
 	return (
 		<div className="space-y-1.5">
@@ -90,13 +115,15 @@ export function AttachmentFilePicker({
 				type="button"
 				className="flex w-full cursor-pointer flex-col items-center justify-center gap-1 rounded-md border border-dashed py-4 text-sm text-muted-foreground transition-colors hover:border-foreground/40 hover:text-foreground"
 				onClick={() => inputRef.current?.click()}
+				onPaste={handlePaste}
 			>
 				<span className="flex items-center gap-2">
 					<RiAttachment2 className="size-4" />
 					Adicionar anexo
 				</span>
 				<span className="text-xs">
-					PDF, JPEG, PNG ou WebP · máx. {maxSizeMb} MB
+					PDF, JPEG, PNG ou WebP · cole ou busque o arquivo · máx. {maxSizeMb}{" "}
+					MB
 				</span>
 			</button>
 		</div>

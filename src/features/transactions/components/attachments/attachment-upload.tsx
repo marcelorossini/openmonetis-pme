@@ -1,7 +1,7 @@
 "use client";
 
 import { RiAttachment2 } from "@remixicon/react";
-import { useRef, useTransition } from "react";
+import { useEffect, useRef, useTransition } from "react";
 import { toast } from "sonner";
 import {
 	confirmAttachmentUploadAction,
@@ -11,6 +11,11 @@ import {
 	ALLOWED_MIME_TYPES,
 	DEFAULT_MAX_FILE_SIZE_MB,
 } from "@/features/transactions/lib/attachments-config";
+import {
+	getFilesFromClipboard,
+	isTextEditingTarget,
+	validateAttachmentFile,
+} from "./attachment-file-utils";
 
 interface AttachmentUploadProps {
 	transactionId: string;
@@ -25,7 +30,6 @@ export function AttachmentUpload({
 	onPendingUpload,
 	maxSizeMb = DEFAULT_MAX_FILE_SIZE_MB,
 }: AttachmentUploadProps) {
-	const maxFileSizeBytes = maxSizeMb * 1024 * 1024;
 	const inputRef = useRef<HTMLInputElement>(null);
 	const [isPending, startTransition] = useTransition();
 
@@ -36,19 +40,13 @@ export function AttachmentUpload({
 
 		if (!file) return;
 
-		if (
-			!ALLOWED_MIME_TYPES.includes(
-				file.type as (typeof ALLOWED_MIME_TYPES)[number],
-			)
-		) {
-			toast.error(
-				"Tipo de arquivo não suportado. Use PDF ou imagem (JPEG, PNG, WebP).",
-			);
-			return;
-		}
+		handleFile(file);
+	}
 
-		if (file.size > maxFileSizeBytes) {
-			toast.error(`O arquivo deve ter no máximo ${maxSizeMb}MB.`);
+	function handleFile(file: File) {
+		const validation = validateAttachmentFile(file, maxSizeMb);
+		if (!validation.ok) {
+			toast.error(validation.error);
 			return;
 		}
 
@@ -94,6 +92,29 @@ export function AttachmentUpload({
 		});
 	}
 
+	function handlePaste(event: React.ClipboardEvent<HTMLButtonElement>) {
+		const [file] = getFilesFromClipboard(event);
+		if (!file) return;
+
+		event.preventDefault();
+		handleFile(file);
+	}
+
+	useEffect(() => {
+		function handleDocumentPaste(event: ClipboardEvent) {
+			if (isPending || isTextEditingTarget(event.target)) return;
+
+			const [file] = getFilesFromClipboard(event);
+			if (!file) return;
+
+			event.preventDefault();
+			handleFile(file);
+		}
+
+		document.addEventListener("paste", handleDocumentPaste);
+		return () => document.removeEventListener("paste", handleDocumentPaste);
+	});
+
 	return (
 		<>
 			<input
@@ -107,6 +128,7 @@ export function AttachmentUpload({
 				type="button"
 				className="flex w-full cursor-pointer flex-col items-center justify-center gap-1 rounded-md border border-dashed py-4 text-sm text-muted-foreground transition-colors hover:border-foreground/40 hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
 				onClick={() => inputRef.current?.click()}
+				onPaste={handlePaste}
 				disabled={isPending}
 			>
 				<span className="flex items-center gap-2">
@@ -115,7 +137,8 @@ export function AttachmentUpload({
 				</span>
 				{!isPending && (
 					<span className="text-xs">
-						PDF, JPEG, PNG ou WebP · máx. {maxSizeMb} MB
+						PDF, JPEG, PNG ou WebP · cole ou busque o arquivo · máx. {maxSizeMb}{" "}
+						MB
 					</span>
 				)}
 			</button>
