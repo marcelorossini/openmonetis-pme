@@ -5,6 +5,14 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/),
 e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
+## [2.6.1] - 2026-05-21
+
+Esta versão corrige o pipeline de publicação após o salto para a `2.6.0`. O build do GitHub Actions falhava antes mesmo de instalar as dependências porque o workflow ainda fixava uma versão antiga do `pnpm`, enquanto o projeto já declarava `pnpm@11.1.3` no `packageManager`.
+
+### Corrigido
+- CI: o workflow de build deixou de fixar uma versão diferente do `pnpm`, usando a versão declarada em `packageManager` para evitar conflito no `pnpm/action-setup`.
+- CI: a política de builds do `pnpm` foi migrada para `allowBuilds`, permitindo explicitamente os scripts necessários de `core-js`, `esbuild`, `sharp` e `unrs-resolver` durante o install no GitHub Actions.
+
 ## [2.6.0] - 2026-05-21
 
 Esta versão implementa melhorias pensadas para o uso real do dia a dia. O OpenMonetis passa a lidar melhor com parcelamentos que já começaram, recupera atalhos importantes no extrato, deixa a revisão de importações mais precisa e dá mais controle para quem mantém uma instância self-hosted. Também entram correções de consistência no dashboard, em cartões, no tratamento da categoria `Pagamentos` e nas datas vindas de planilhas.
@@ -22,7 +30,6 @@ Esta versão implementa melhorias pensadas para o uso real do dia a dia. O OpenM
 - Importação: os controles globais da revisão de extrato foram realinhados à esquerda, com espaçamento mais compacto e larguras mais consistentes.
 
 ### Corrigido
-- CI: o workflow de build deixou de fixar uma versão diferente do `pnpm`, usando a versão declarada em `packageManager` para evitar conflito no `pnpm/action-setup`.
 - Dashboard: o widget "Status de Pagamento" voltou a mostrar corretamente os valores em "A Pagar", somando despesas pelo valor absoluto e mantendo reembolsos como abatimento.
 - Importação: datas vindas de planilhas agora preservam o dia informado no Excel, evitando que `20/05/2026` apareça como `19/05/2026` em fusos como `America/Sao_Paulo`.
 - Importação: o seletor de categoria por linha agora mostra apenas categorias compatíveis com o tipo detectado do lançamento, separando receitas e despesas durante a revisão do extrato.
