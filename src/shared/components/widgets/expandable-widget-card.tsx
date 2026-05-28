@@ -66,14 +66,15 @@ export function ExpandableWidgetCard({
 				contentClassName={EXPANDABLE_CONTENT_CLASSNAME}
 				overlay={
 					hasOverflow ? (
-						<div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center bg-linear-to-t from-card to-transparent pt-12 pb-6">
+						<div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center bg-linear-to-t from-card to-transparent pt-8 pb-4">
 							<Button
-								variant="outline"
+								variant="secondary"
+								size="sm"
 								className="pointer-events-auto text-xs"
 								onClick={() => setIsOpen(true)}
 								aria-label="Expandir para ver todo o conteúdo"
 							>
-								Ver tudo{" "}
+								Expandir
 								<RiExpandDiagonalLine className="size-3" aria-hidden="true" />
 							</Button>
 						</div>
@@ -94,7 +95,7 @@ export function ExpandableWidgetCard({
 							<p className="text-muted-foreground text-sm">{subtitle}</p>
 						) : null}
 					</DialogHeader>
-					<div className="scrollbar-hide max-h-[calc(85vh-6rem)] overflow-y-auto pb-6">
+					<div className="-mr-3 max-h-[calc(85vh-6rem)] overflow-y-auto pb-6 pr-3 [scrollbar-gutter:stable]">
 						{children}
 					</div>
 				</DialogContent>

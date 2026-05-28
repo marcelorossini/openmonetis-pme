@@ -405,6 +405,7 @@ const buildInstallmentExpensesData = (
 			dueDate: row.dueDate,
 			purchaseDate: row.purchaseDate,
 			period: row.period,
+			isSettled: row.isSettled,
 		}))
 		.sort((a, b) => {
 			const remainingA =

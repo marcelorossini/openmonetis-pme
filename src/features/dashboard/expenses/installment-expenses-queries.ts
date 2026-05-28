@@ -8,6 +8,7 @@ export type InstallmentExpense = {
 	dueDate: Date | null;
 	purchaseDate: Date;
 	period: string;
+	isSettled: boolean | null;
 };
 
 export type InstallmentExpensesData = {

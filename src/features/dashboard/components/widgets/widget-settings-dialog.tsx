@@ -73,6 +73,7 @@ export function WidgetSettingsDialog({
 										</div>
 									</div>
 									<Switch
+										aria-label={`${isVisible ? "Ocultar" : "Exibir"} widget ${widget.title}`}
 										checked={isVisible}
 										onCheckedChange={() => onToggleWidget(widget.id)}
 									/>

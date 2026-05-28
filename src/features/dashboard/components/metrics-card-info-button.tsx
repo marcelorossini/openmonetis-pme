@@ -2,10 +2,10 @@
 
 import { RiInformationLine } from "@remixicon/react";
 import {
-	HoverCard,
-	HoverCardContent,
-	HoverCardTrigger,
-} from "@/shared/components/ui/hover-card";
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/shared/components/ui/tooltip";
 
 type MetricsCardInfoButtonProps = {
 	label: string;
@@ -19,8 +19,8 @@ export function MetricsCardInfoButton({
 	helpLines,
 }: MetricsCardInfoButtonProps) {
 	return (
-		<HoverCard openDelay={150}>
-			<HoverCardTrigger asChild>
+		<Tooltip>
+			<TooltipTrigger asChild>
 				<button
 					type="button"
 					className="inline-flex items-center rounded-full text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
@@ -28,17 +28,22 @@ export function MetricsCardInfoButton({
 				>
 					<RiInformationLine className="size-4" aria-hidden />
 				</button>
-			</HoverCardTrigger>
-			<HoverCardContent align="start" className="w-80 space-y-3">
+			</TooltipTrigger>
+			<TooltipContent
+				align="start"
+				side="bottom"
+				sideOffset={8}
+				className="max-w-80 space-y-3 p-3 text-left"
+			>
 				<div className="space-y-1">
-					<p className="text-sm font-medium text-foreground">{helpTitle}</p>
+					<p className="text-sm font-medium text-background">{helpTitle}</p>
 				</div>
-				<ul className="space-y-2 text-xs text-muted-foreground">
+				<ul className="space-y-2 text-xs text-background/80">
 					{helpLines.map((line) => (
 						<li key={`${label}-${line}`}>{line}</li>
 					))}
 				</ul>
-			</HoverCardContent>
-		</HoverCard>
+			</TooltipContent>
+		</Tooltip>
 	);
 }

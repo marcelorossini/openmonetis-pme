@@ -31,7 +31,11 @@ import {
 	getCurrentPeriod,
 	periodToDate,
 } from "@/shared/utils/period";
+import { slugify } from "@/shared/utils/string";
 import type { CategoryReportFiltersProps } from "./types";
+
+const getCategorySearchValue = (name: string, id: string) =>
+	`${name} ${slugify(name)} ${id}`;
 
 /**
  * Category Report Filters Component
@@ -53,7 +57,14 @@ export function CategoryReportFilters({
 	const filteredCategories = useMemo(() => {
 		if (!searchValue) return categories;
 		const search = searchValue.toLowerCase();
-		return categories.filter((cat) => cat.name.toLowerCase().includes(search));
+		const normalizedSearch = slugify(searchValue);
+		return categories.filter((cat) => {
+			const categorySearchValue = getCategorySearchValue(cat.name, cat.id);
+			return (
+				categorySearchValue.toLowerCase().includes(search) ||
+				categorySearchValue.includes(normalizedSearch)
+			);
+		});
 	}, [categories, searchValue]);
 
 	// Get selected categories for display
@@ -74,15 +85,6 @@ export function CategoryReportFilters({
 			...filters,
 			selectedCategories: newSelected,
 		});
-	};
-
-	// Handle select all
-	const handleSelectAll = () => {
-		onFiltersChange({
-			...filters,
-			selectedCategories: categories.map((cat) => cat.id),
-		});
-		setOpen(false);
 	};
 
 	// Handle clear all
@@ -130,11 +132,9 @@ export function CategoryReportFilters({
 	const selectedText =
 		selectedCategories.length === 0
 			? "Categoria"
-			: selectedCategories.length === categories.length
-				? "Todas"
-				: selectedCategories.length === 1
-					? selectedCategories[0].name
-					: `${selectedCategories.length} selecionadas`;
+			: selectedCategories.length === 1
+				? selectedCategories[0].name
+				: `${selectedCategories.length} selecionadas`;
 
 	return (
 		<div className="flex flex-col gap-4">
@@ -168,25 +168,18 @@ export function CategoryReportFilters({
 								<CommandList>
 									<CommandEmpty>Nenhuma categoria encontrada.</CommandEmpty>
 									<CommandGroup>
-										{/* Select All / Clear All */}
-										<div className="flex gap-1 p-2 border-b">
-											<Button
-												variant="ghost"
-												size="sm"
-												className="h-7 text-xs flex-1"
-												onClick={handleSelectAll}
-											>
-												Todas
-											</Button>
-											<Button
-												variant="ghost"
-												size="sm"
-												className="h-7 text-xs flex-1"
-												onClick={handleClearAll}
-											>
-												Limpar
-											</Button>
-										</div>
+										{filters.selectedCategories.length > 0 ? (
+											<div className="p-2 border-b">
+												<Button
+													variant="ghost"
+													size="sm"
+													className="h-7 w-full text-xs"
+													onClick={handleClearAll}
+												>
+													Limpar seleção
+												</Button>
+											</div>
+										) : null}
 
 										{/* Category List */}
 										{filteredCategories.map((category) => {
@@ -200,7 +193,10 @@ export function CategoryReportFilters({
 											return (
 												<CommandItem
 													key={category.id}
-													value={category.id}
+													value={getCategorySearchValue(
+														category.name,
+														category.id,
+													)}
 													onSelect={() => handleCategoryToggle(category.id)}
 													className="cursor-pointer"
 												>

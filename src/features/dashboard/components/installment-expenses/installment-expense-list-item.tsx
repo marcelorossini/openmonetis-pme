@@ -20,6 +20,7 @@ export function InstallmentExpenseListItem({
 	const {
 		compactLabel,
 		isLast,
+		remainingLabel,
 		remainingInstallments,
 		remainingAmount,
 		endDate,
@@ -65,15 +66,22 @@ export function InstallmentExpenseListItem({
 					/>
 				</div>
 
-				<p className="text-xs text-muted-foreground">
-					{endDate ? `Termina em ${endDate}` : null}
-					{" · Restante "}
-					<MoneyValues
-						amount={remainingAmount}
-						className="inline-block font-semibold"
-					/>{" "}
-					({remainingInstallments})
-				</p>
+				{remainingInstallments === 0 ? (
+					<p className="text-xs text-muted-foreground">
+						{endDate ? `Termina em ${endDate}` : null}
+						{" · Quitado"}
+					</p>
+				) : (
+					<p className="text-xs text-muted-foreground">
+						{endDate ? `Termina em ${endDate}` : null}
+						{` · ${remainingLabel}: `}
+						<MoneyValues
+							amount={remainingAmount}
+							className="inline-block font-semibold"
+						/>{" "}
+						({remainingInstallments}x)
+					</p>
+				)}
 
 				<Progress value={progress} className="mt-1 h-2" />
 			</div>

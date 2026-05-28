@@ -1,4 +1,4 @@
-import { RiExternalLinkLine, RiWallet3Line } from "@remixicon/react";
+import { RiExternalLinkLine } from "@remixicon/react";
 import Link from "next/link";
 import type { DashboardCategoryBreakdownItem } from "@/features/dashboard/categories/category-breakdown-helpers";
 import { PercentageChangeIndicator } from "@/features/dashboard/components/percentage-change-indicator";
@@ -63,7 +63,7 @@ export function CategoryBreakdownListItem({
 								/>
 							</Link>
 						</div>
-						<div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+						<div className="flex flex-wrap items-center gap-x-1 text-xs text-muted-foreground">
 							<span>
 								{formatPercentage(
 									category.percentageOfTotal,
@@ -77,10 +77,9 @@ export function CategoryBreakdownListItem({
 									<span
 										className={`flex items-center gap-1 ${budgetExceeded ? "text-destructive" : "text-info"}`}
 									>
-										<RiWallet3Line className="size-3 shrink-0" />
 										{budgetExceeded ? (
 											<>
-												excedeu{" "}
+												Excedeu{" "}
 												<span className="font-medium">
 													{formatCurrency(exceededAmount)}
 												</span>

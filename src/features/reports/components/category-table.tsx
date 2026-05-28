@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useMemo } from "react";
 import { formatPeriodLabel } from "@/features/reports/lib/utils";
 import { CategoryIconBadge } from "@/shared/components/entity-avatar";
-import StatusDot from "@/shared/components/feedback/status-dot";
 import { Card } from "@/shared/components/ui/card";
 import {
 	Table,
@@ -37,6 +36,13 @@ export function CategoryTable({
 	categories,
 	periods,
 }: CategoryTableProps) {
+	const categoryColumnLabel =
+		title === "Despesas"
+			? "Categoria Despesa"
+			: title === "Receitas"
+				? "Categoria Receita"
+				: "Categoria";
+
 	// Calculate section totals
 	const sectionTotals = useMemo(() => {
 		const totalsMap = new Map<string, number>();
@@ -73,7 +79,7 @@ export function CategoryTable({
 				<TableHeader>
 					<TableRow>
 						<TableHead className="w-[240px] min-w-[240px] font-medium">
-							Categoria
+							{categoryColumnLabel}
 						</TableHead>
 						{periods.map((period) => (
 							<TableHead
@@ -114,14 +120,6 @@ export function CategoryTable({
 							<TableRow key={category.categoryId}>
 								<TableCell>
 									<div className="flex items-center gap-2">
-										<StatusDot
-											color={
-												category.type === "receita"
-													? "bg-success"
-													: "bg-destructive"
-											}
-										/>
-
 										<CategoryIconBadge
 											icon={category.icon}
 											name={category.name}
