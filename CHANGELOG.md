@@ -5,6 +5,37 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/),
 e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
+## [2.7.0] - 2026-05-28
+
+Esta versão melhora o uso diário do OpenMonetis em várias frentes: sessões mais confortáveis em dispositivos pessoais, novos recursos de IA com MiniMax, registro rápido de rendimentos no extrato e uma divisão de lançamentos mais completa para despesas compartilhadas. Também há polimentos importantes em filtros, relatórios, dashboard e telas de detalhe para deixar a leitura das informações financeiras mais direta.
+
+### Adicionado
+- Autenticação: a tela de login agora tem a opção "Manter conectado neste dispositivo", usando a persistência nativa do Better Auth para evitar novo login ao reabrir o navegador ou PWA.
+- Autenticação: novas variáveis `AUTH_SESSION_EXPIRES_IN_DAYS` e `AUTH_SESSION_UPDATE_AGE_HOURS` para configurar, em ambientes self-hosted, a duração e a renovação de sessões persistentes.
+- Contas: o extrato de uma conta agora tem um atalho "Adicionar rendimento" ao lado de "Ajustar saldo", abrindo um modal simples com valor e data para criar uma receita paga na conta atual, com categoria `Rendimentos`, forma de pagamento `Transferência bancária` e pessoa admin.
+- Insights: adicionado suporte ao provider MiniMax via `vercel-minimax-ai-provider`, incluindo os modelos M2.7, M2.7 Highspeed, M2.5, M2.5 Highspeed, M2.1, M2.1 Highspeed e M2.
+- Configuração: adicionada a variável `MINIMAX_API_KEY` aos exemplos de ambiente e ao assistente de setup.
+- Lançamentos: o campo "Dividir com" agora permite selecionar múltiplas pessoas e exibe um campo de valor para cada participante escolhido.
+- Lançamentos: o modal de criação e edição agora exibe um card compacto de resumo da operação abaixo dos anexos, incluindo forma de pagamento, destino, categoria, pessoas, valores divididos e quantidade de lançamentos que serão criados.
+
+### Alterado
+- Contas: o modal "Adicionar rendimento" usa o mesmo seletor de data do modal de lançamentos e os botões de rendimento e ajuste de saldo agora exibem tooltip.
+- Categorias: o header de `/categories/[categoryId]` agora usa três blocos de métrica alinhados para total do mês selecionado, total do mês anterior e variação.
+- Dashboard: o botão expansível dos widgets passou de "Ver tudo" para "Expandir", com visual secundário e gradiente inferior mais compacto para diferenciar melhor a ação de abrir o modal dos links que navegam para páginas completas.
+- Lançamentos: o filtro de categorias agora separa as opções em grupos de `Despesas` e `Receitas`, preservando ícones e busca dentro do seletor.
+- Lançamentos: a configuração de divisão foi movida para um modal dedicado e minimalista, com seleção direta de participantes, divisão igual e conferência do total distribuído.
+- Lançamentos: a validação de divisão agora aceita uma lista de participações, exige pessoas distintas e confere se a soma dos valores bate com o total do lançamento.
+- Lançamentos: os textos de edição de lançamentos divididos foram ajustados para tratar divisões com mais de duas pessoas.
+- Lançamentos: o card "Dividir lançamento" agora mostra avatares discretos antes dos nomes das pessoas selecionadas e remove as vírgulas entre os nomes no resumo.
+- Relatórios: em `/reports/category-trends`, o seletor de categorias não exibe mais a ação `Todas`; quando há seleção ativa, mostra apenas `Limpar seleção` e resume múltiplas escolhas pela contagem.
+- Relatórios: em `/reports/category-trends`, as tabelas agora usam os cabeçalhos `Categoria Despesa` e `Categoria Receita` e não exibem mais o ponto colorido antes do nome da categoria.
+
+### Corrigido
+- Categorias: em `/categories/[categoryId]`, o percentual de variação do header agora aparece sem `+` quando já há uma etiqueta indicando aumento, queda ou estabilidade.
+- Dashboard: os modais "Ver tudo" dos widgets agora reservam espaço para a barra de rolagem, evitando que ela fique sobreposta aos valores alinhados à direita.
+- Insights: o seletor de modelo do OpenRouter mantém o provider selecionado enquanto o usuário digita um modelo customizado sem `/`, evitando voltar automaticamente para o provider padrão.
+- Relatórios: em `/reports/category-trends`, a busca do seletor de categorias agora pesquisa pelo nome da categoria, e não apenas pelo ID interno, incluindo correspondência sem acentos.
+
 ## [2.6.4] - 2026-05-23
 
 Esta versão reúne o polimento final antes da próxima publicação: melhora o fluxo de antecipação de parcelas, deixa os dialogs de lançamentos mais seguros e consistentes, e incorpora as contribuições vindas dos PRs abertos para nomes de logos e ajustes no cadastro de transações.

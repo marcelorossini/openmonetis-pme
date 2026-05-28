@@ -8,7 +8,7 @@
 
 > **⚠️ Não há versão online hospedada.** Você precisa clonar o repositório e rodar localmente ou no seu próprio servidor.
 
-[![Version](https://img.shields.io/badge/version-2.6.4-blue?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-2.7.0-blue?style=flat-square)](CHANGELOG.md)
 [![Next.js](https://img.shields.io/badge/Next.js-black?style=flat-square&logo=next.js)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-blue?style=flat-square&logo=postgresql)](https://www.postgresql.org/)
@@ -62,7 +62,7 @@ A ideia é simples: ter um lugar onde consigo ver todas as minhas contas, cartõ
 
 ### Funcionalidades
 
-💰 **Contas e transações** — Contas bancárias, cartões, dinheiro. Receitas, despesas e transferências. Categorização, filtros combináveis com intervalo de datas, extratos detalhados e importação de extratos OFX e XLS/XLSX com detecção automática de categoria.
+💰 **Contas e transações** — Contas bancárias, cartões, dinheiro. Receitas, despesas, rendimentos e transferências. Categorização, divisão de lançamentos entre várias pessoas, filtros combináveis com intervalo de datas, extratos detalhados e importação de extratos OFX e XLS/XLSX com detecção automática de categoria.
 
 📊 **Dashboard e relatórios** — Widgets interativos de métricas, gráficos de evolução, comparativos por categoria, tendências, uso de cartões, top estabelecimentos. Exportação em PDF e Excel.
 
@@ -72,7 +72,7 @@ A ideia é simples: ter um lugar onde consigo ver todas as minhas contas, cartõ
 
 💸 **Parcelamentos avançados** — Séries de parcelas, antecipação com cálculo de desconto, análise consolidada.
 
-🤖 **Insights com IA** — Análises geradas por Claude, GPT, Gemini ou OpenRouter. Insights personalizados e histórico salvo.
+🤖 **Insights com IA** — Análises geradas por Claude, GPT, Gemini, MiniMax ou OpenRouter. Insights personalizados e histórico salvo.
 
 👥 **Gestão colaborativa** — Pagadores com permissões (admin/viewer), notificações automáticas por e-mail, códigos de compartilhamento.
 
@@ -96,7 +96,7 @@ A ideia é simples: ter um lugar onde consigo ver todas as minhas contas, cartõ
 - **shadcn/ui** (Radix UI) + **Tailwind CSS**
 - **Docker** (multi-stage build)
 - **Biome** (linting + formatting)
-- **Vercel AI SDK** (Claude, GPT, Gemini, OpenRouter)
+- **Vercel AI SDK** (Claude, GPT, Gemini, MiniMax, OpenRouter)
 
 ---
 
@@ -447,6 +447,8 @@ POSTGRES_DB=openmonetis_db
 
 # Autenticação
 DISABLE_SIGNUP=false # true bloqueia novos cadastros
+AUTH_SESSION_EXPIRES_IN_DAYS=30 # duração de sessões persistentes
+AUTH_SESSION_UPDATE_AGE_HOURS=24 # frequência de renovação da sessão
 
 # S3 Server (opcional, necessario para anexos)
 S3_ENDPOINT=
@@ -470,6 +472,7 @@ RESEND_FROM_EMAIL=
 ANTHROPIC_API_KEY=
 OPENAI_API_KEY=
 GOOGLE_GENERATIVE_AI_API_KEY=
+MINIMAX_API_KEY=
 OPENROUTER_API_KEY=
 
 # Logo.dev (opcional, necessário para logos automáticos de estabelecimentos)
