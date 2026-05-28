@@ -14,6 +14,25 @@ import { normalizeNameFromEmail } from "@/shared/lib/payers/utils";
 
 const googleClientId = process.env.GOOGLE_CLIENT_ID;
 const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
+const DEFAULT_SESSION_EXPIRES_IN_DAYS = 30;
+const DEFAULT_SESSION_UPDATE_AGE_HOURS = 24;
+
+function parsePositiveIntegerEnv(name: string, fallback: number): number {
+	const value = process.env[name];
+	if (!value) return fallback;
+
+	const parsed = Number.parseInt(value, 10);
+	return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+const sessionExpiresInDays = parsePositiveIntegerEnv(
+	"AUTH_SESSION_EXPIRES_IN_DAYS",
+	DEFAULT_SESSION_EXPIRES_IN_DAYS,
+);
+const sessionUpdateAgeHours = parsePositiveIntegerEnv(
+	"AUTH_SESSION_UPDATE_AGE_HOURS",
+	DEFAULT_SESSION_UPDATE_AGE_HOURS,
+);
 
 /**
  * Extrai nome do usuário do perfil do Google com fallback hierárquico:
@@ -77,6 +96,8 @@ export const auth = betterAuth({
 
 	// Session configuration - Safari compatibility
 	session: {
+		expiresIn: sessionExpiresInDays * 24 * 60 * 60,
+		updateAge: sessionUpdateAgeHours * 60 * 60,
 		cookieCache: {
 			enabled: true,
 			maxAge: 60 * 5, // 5 minutes

@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/shared/components/ui/button";
+import { Checkbox } from "@/shared/components/ui/checkbox";
 import {
 	Field,
 	FieldDescription,
@@ -38,6 +39,7 @@ export function LoginForm({
 
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
+	const [rememberMe, setRememberMe] = useState(false);
 
 	const [error, setError] = useState("");
 	const [loadingEmail, setLoadingEmail] = useState(false);
@@ -60,7 +62,7 @@ export function LoginForm({
 				email,
 				password,
 				callbackURL: "/dashboard",
-				rememberMe: false,
+				rememberMe,
 			},
 			{
 				onRequest: () => {
@@ -185,6 +187,24 @@ export function LoginForm({
 								aria-invalid={!!error}
 							/>
 						</Field>
+
+						<div className="flex items-start gap-3">
+							<Checkbox
+								id="remember-me"
+								checked={rememberMe}
+								onCheckedChange={(checked) => setRememberMe(checked === true)}
+								disabled={loadingEmail || loadingGoogle || loadingPasskey}
+								className="mt-0.5"
+							/>
+							<div className="grid gap-1">
+								<FieldLabel
+									htmlFor="remember-me"
+									className="cursor-pointer font-medium"
+								>
+									Manter conectado neste dispositivo
+								</FieldLabel>
+							</div>
+						</div>
 
 						<Field>
 							<Button
