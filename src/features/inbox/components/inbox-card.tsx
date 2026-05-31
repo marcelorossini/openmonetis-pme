@@ -206,7 +206,7 @@ export const InboxCard = memo(function InboxCard({
 						onClick={() => onProcess?.(item)}
 					>
 						<RiCheckLine className="mr-1.5 size-4" />
-						Processar
+						Lançar
 					</Button>
 					<Button
 						size="icon-sm"

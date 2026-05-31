@@ -129,7 +129,7 @@ export function InboxDetailsDialog({
 								onProcess(item);
 							}}
 						>
-							Processar
+							Lançar
 						</Button>
 					)}
 				</DialogFooter>

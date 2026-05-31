@@ -245,7 +245,7 @@ export async function fetchDashboardNotifications(
 	]);
 
 	// =====================
-	// Processar notificações
+	// lançar notificações
 	// =====================
 
 	const notifications: DashboardNotification[] = [];

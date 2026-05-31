@@ -127,7 +127,7 @@ export async function POST(request: Request) {
 
 		console.error("[API] Error creating inbox item:", error);
 		return NextResponse.json(
-			{ error: "Erro ao processar notificação" },
+			{ error: "Erro ao lançar notificação" },
 			{ status: 500 },
 		);
 	}

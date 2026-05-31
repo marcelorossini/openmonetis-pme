@@ -86,7 +86,7 @@ export async function POST(request: Request) {
 		const body = await request.json();
 		const { items } = inboxBatchSchema.parse(body);
 
-		// Processar todos os itens em paralelo
+		// lançar todos os itens em paralelo
 		const settled = await Promise.allSettled(
 			items.map((item) =>
 				db
@@ -119,7 +119,7 @@ export async function POST(request: Request) {
 			return {
 				clientId: item?.clientId,
 				success: false,
-				error: "Erro ao processar notificação",
+				error: "Erro ao lançar notificação",
 			};
 		});
 
@@ -160,7 +160,7 @@ export async function POST(request: Request) {
 
 		console.error("[API] Error creating batch inbox items:", error);
 		return NextResponse.json(
-			{ error: "Erro ao processar notificações" },
+			{ error: "Erro ao lançar notificações" },
 			{ status: 500 },
 		);
 	}
