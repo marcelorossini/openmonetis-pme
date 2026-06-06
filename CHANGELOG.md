@@ -5,6 +5,21 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/),
 e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
+## [2.7.3] - 2026-06-05
+
+Esta versão melhora pequenos pontos de leitura e configuração para o uso diário e self-hosted. As faturas pagas ficam mais fáceis de identificar na lista de cartões, a configuração de origins confiáveis do Better Auth passa a ficar documentada para Docker e túneis, o dashboard corrige a leitura de tempo dos pré-lançamentos e as dependências seguem atualizadas sem quebrar o build da imagem.
+
+### Adicionado
+- Cartões: a lista de cartões agora exibe a etiqueta `Paga` ao lado do valor da fatura atual quando ela já foi quitada.
+- Self-hosting: adicionada a variável `BETTER_AUTH_TRUSTED_ORIGINS` ao `.env.example`, ao `docker-compose.yml` e ao README para permitir origins adicionais confiáveis em cenários com Cloudflare Tunnel, reverse proxy ou URLs diferentes de `BETTER_AUTH_URL`.
+
+### Alterado
+- Dependências: atualizados Next.js, React, Better Auth, AI SDK, AWS SDK, pdf.js e ferramentas de desenvolvimento usadas no build.
+
+### Corrigido
+- Dashboard: o widget `Pré-lançamentos` agora calcula o rótulo `há X` a partir da chegada do item ao OpenMonetis, evitando deslocamentos causados por timestamps de notificação enviados com timezone incorreto.
+- Anexos: o preview de PDFs foi ajustado para a API atual do `pdfjs-dist`, evitando falha de TypeScript durante o build da imagem Docker.
+
 ## [2.7.2] - 2026-05-31
 
 Esta versão atualiza as imagens de apresentação do OpenMonetis na landing page e no compartilhamento em redes sociais.

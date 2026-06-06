@@ -8,7 +8,7 @@
 
 > **⚠️ Não há versão online hospedada.** Você precisa clonar o repositório e rodar localmente ou no seu próprio servidor.
 
-[![Version](https://img.shields.io/badge/version-2.7.2-blue?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-2.7.3-blue?style=flat-square)](CHANGELOG.md)
 [![Next.js](https://img.shields.io/badge/Next.js-black?style=flat-square&logo=next.js)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-blue?style=flat-square&logo=postgresql)](https://www.postgresql.org/)
@@ -451,6 +451,7 @@ POSTGRES_DB=openmonetis_db
 DISABLE_SIGNUP=false # true bloqueia novos cadastros
 AUTH_SESSION_EXPIRES_IN_DAYS=30 # duração de sessões persistentes
 AUTH_SESSION_UPDATE_AGE_HOURS=24 # frequência de renovação da sessão
+BETTER_AUTH_TRUSTED_ORIGINS= # origins adicionais confiáveis, separadas por vírgula
 
 # S3 Server (opcional, necessario para anexos)
 S3_ENDPOINT=
@@ -484,6 +485,19 @@ OLLAMA_API_KEY=
 LOGO_DEV_TOKEN=
 LOGO_DEV_SECRET_KEY=
 ```
+
+### BETTER_AUTH_TRUSTED_ORIGINS
+
+Use `BETTER_AUTH_TRUSTED_ORIGINS` quando o OpenMonetis for acessado por uma URL diferente de `BETTER_AUTH_URL`, como Cloudflare Tunnel, reverse proxy, domínio local ou subdomínios temporários. Isso evita falhas de login como `Invalid origin` sem precisar alterar a imagem Docker.
+
+Informe apenas origins confiáveis, separadas por vírgula:
+
+```env
+BETTER_AUTH_URL=http://localhost:3000
+BETTER_AUTH_TRUSTED_ORIGINS=https://*.trycloudflare.com,https://openmonetis.seudominio.com
+```
+
+Para Google OAuth e outros callbacks externos, mantenha `BETTER_AUTH_URL` apontando para a URL pública/canônica configurada no provedor.
 
 ### IA local com Ollama
 
