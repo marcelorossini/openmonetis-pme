@@ -5,6 +5,18 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/),
 e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
+## [2.7.5] - 2026-06-13
+
+Esta versão faz um polimento pontual no dashboard, deixando os widgets mais explicativos, consistentes e confiáveis quando há listas maiores ou informações complementares para revisar.
+
+### Alterado
+- Dashboard: os indicadores percentuais de faturas por pessoa, despesas por categoria, receitas por categoria e tendências de categorias agora deixam explícito que a comparação é contra o mês anterior.
+- Dashboard: pequenos ajustes visuais em widgets melhoram espaçamento, bordas e leitura de itens financeiros.
+
+### Corrigido
+- Dashboard: o widget `Lançamentos por categoria` agora recalcula corretamente o overflow quando a lista muda e volta a exibir o botão `Expandir` em listagens grandes.
+- Relatórios: em `/reports/installment-analysis`, os cards de parcelamentos agora exibem o ícone de observação ao lado do nome do lançamento quando há anotação cadastrada.
+
 ## [2.7.4] - 2026-06-09
 
 Esta versão corrige o fluxo de revisão de lançamentos compartilhados para que o acesso somente leitura proteja os dados originais sem impedir que a pessoa copie movimentos para a própria conta.
