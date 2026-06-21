@@ -162,9 +162,15 @@ export function AttachmentGridItem({
 				</div>
 
 				{/* Data */}
-				<span className="text-xs text-muted-foreground">
-					{formatDate(attachment.purchaseDate)}
-				</span>
+				<div className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground">
+					<span className="shrink-0">
+						{formatDate(attachment.purchaseDate)}
+					</span>
+					<span aria-hidden>·</span>
+					<span className="truncate" title={attachment.payerName}>
+						{attachment.payerName}
+					</span>
+				</div>
 
 				{/* Transação e Valor */}
 				<div className="flex items-start justify-between gap-2">

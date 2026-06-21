@@ -3,6 +3,7 @@ import { cacheLife, cacheTag } from "next/cache";
 import {
 	attachments,
 	categories,
+	payers,
 	transactionAttachments,
 	transactions,
 } from "@/db/schema";
@@ -21,11 +22,20 @@ export type AttachmentForPeriod = {
 	purchaseDate: Date;
 	categoryName: string | null;
 	categoryIcon: string | null;
+	payerId: string;
+	payerName: string;
+	payerAvatarUrl: string | null;
+};
+
+export type AttachmentsPageData = {
+	attachments: AttachmentForPeriod[];
+	adminPayerId: string;
 };
 
 export async function fetchAttachmentsForPeriod(
 	userId: string,
 	period: string,
+	payerScope?: string | "all",
 ): Promise<AttachmentForPeriod[]> {
 	"use cache";
 	cacheTag(`dashboard-${userId}`);
@@ -33,8 +43,9 @@ export async function fetchAttachmentsForPeriod(
 
 	const adminPayerId = await getAdminPayerId(userId);
 	if (!adminPayerId) return [];
+	const payerId = payerScope ?? adminPayerId;
 
-	return db
+	const rows = await db
 		.select({
 			attachmentId: attachments.id,
 			fileName: attachments.fileName,
@@ -47,6 +58,9 @@ export async function fetchAttachmentsForPeriod(
 			purchaseDate: transactions.purchaseDate,
 			categoryName: categories.name,
 			categoryIcon: categories.icon,
+			payerId: payers.id,
+			payerName: payers.name,
+			payerAvatarUrl: payers.avatarUrl,
 		})
 		.from(transactionAttachments)
 		.innerJoin(
@@ -61,10 +75,32 @@ export async function fetchAttachmentsForPeriod(
 			and(
 				eq(transactionAttachments.transactionId, transactions.id),
 				eq(transactions.userId, userId),
-				eq(transactions.payerId, adminPayerId),
 				eq(transactions.period, period),
+				payerId === "all" ? undefined : eq(transactions.payerId, payerId),
 			),
 		)
-		.leftJoin(categories, eq(transactions.categoryId, categories.id))
+		.innerJoin(
+			payers,
+			and(eq(transactions.payerId, payers.id), eq(payers.userId, userId)),
+		)
+		.leftJoin(
+			categories,
+			and(
+				eq(transactions.categoryId, categories.id),
+				eq(categories.userId, userId),
+			),
+		)
 		.orderBy(desc(transactions.purchaseDate), desc(attachments.id));
+
+	return rows;
+}
+
+export async function fetchAttachmentsPageData(
+	userId: string,
+	period: string,
+): Promise<AttachmentsPageData | null> {
+	const adminPayerId = await getAdminPayerId(userId);
+	if (!adminPayerId) return null;
+	const rows = await fetchAttachmentsForPeriod(userId, period, "all");
+	return { attachments: rows, adminPayerId };
 }

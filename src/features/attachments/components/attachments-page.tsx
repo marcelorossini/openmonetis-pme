@@ -4,6 +4,8 @@ import {
 	RiAttachmentLine,
 	RiFilePdf2Line,
 	RiImageLine,
+	RiUserLine,
+	RiVerifiedBadgeFill,
 } from "@remixicon/react";
 import { useRouter } from "next/navigation";
 import type React from "react";
@@ -17,9 +19,17 @@ import type { TransactionDialogOptions } from "@/features/transactions/actions/f
 import { fetchTransactionDialogOptionsAction } from "@/features/transactions/actions/fetch-dialog-options";
 import { TransactionDetailsDialog } from "@/features/transactions/components/dialogs/transaction-details-dialog";
 import { TransactionDialog } from "@/features/transactions/components/dialogs/transaction-dialog/transaction-dialog";
+import { PayerSelectContent } from "@/features/transactions/components/select-items";
 import type { TransactionItem } from "@/features/transactions/components/types";
 import { EmptyState } from "@/shared/components/feedback/empty-state";
 import { Card, CardContent } from "@/shared/components/ui/card";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/shared/components/ui/select";
 import { cn } from "@/shared/utils/ui";
 
 type FilterType = "all" | "images" | "pdfs";
@@ -73,11 +83,18 @@ const FILTERS: {
 
 interface AttachmentsPageProps {
 	attachments: AttachmentForPeriod[];
+	adminPayerId: string;
 }
 
-export function AttachmentsPage({ attachments }: AttachmentsPageProps) {
+const ALL_PAYERS = "all";
+
+export function AttachmentsPage({
+	attachments,
+	adminPayerId,
+}: AttachmentsPageProps) {
 	const router = useRouter();
 	const [filter, setFilter] = useState<FilterType>("all");
+	const [payerFilter, setPayerFilter] = useState(adminPayerId);
 	const [selectedIndex, setSelectedIndex] = useState(-1);
 	const [transactionDetails, setTransactionDetails] =
 		useState<TransactionItem | null>(null);
@@ -93,21 +110,44 @@ export function AttachmentsPage({ attachments }: AttachmentsPageProps) {
 	const [dialogOptions, setDialogOptions] =
 		useState<TransactionDialogOptions | null>(null);
 
-	const filteredAttachments = attachments.filter((a) => {
+	const payerOptions = Array.from(
+		new Map(
+			attachments.map((attachment) => [
+				attachment.payerId,
+				{
+					value: attachment.payerId,
+					label: attachment.payerName,
+					avatarUrl: attachment.payerAvatarUrl,
+				},
+			]),
+		).values(),
+	).sort((a, b) =>
+		a.label.localeCompare(b.label, "pt-BR", { sensitivity: "base" }),
+	);
+
+	const payerAttachments = attachments.filter(
+		(attachment) =>
+			payerFilter === ALL_PAYERS || attachment.payerId === payerFilter,
+	);
+	const selectedPayer = payerOptions.find(
+		(option) => option.value === payerFilter,
+	);
+
+	const filteredAttachments = payerAttachments.filter((a) => {
 		if (filter === "images") return a.mimeType.startsWith("image/");
 		if (filter === "pdfs") return a.mimeType === "application/pdf";
 		return true;
 	});
 
-	const imageCount = attachments.filter((a) =>
+	const imageCount = payerAttachments.filter((a) =>
 		a.mimeType.startsWith("image/"),
 	).length;
-	const pdfCount = attachments.filter(
+	const pdfCount = payerAttachments.filter(
 		(a) => a.mimeType === "application/pdf",
 	).length;
 
 	const counts: Record<FilterType, number> = {
-		all: attachments.length,
+		all: payerAttachments.length,
 		images: imageCount,
 		pdfs: pdfCount,
 	};
@@ -161,36 +201,98 @@ export function AttachmentsPage({ attachments }: AttachmentsPageProps) {
 									{filter !== "all" &&
 										` · ${FILTERS.find((f) => f.value === filter)?.label.toLowerCase()}`}
 								</p>
-								<div className="flex items-center gap-1 rounded-lg border p-1">
-									{FILTERS.map(({ value, label, icon }) => (
-										<button
-											key={value}
-											type="button"
-											onClick={() => {
-												setFilter(value);
-												setSelectedIndex(-1);
-											}}
-											className={cn(
-												"flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
-												filter === value
-													? "bg-primary text-primary-foreground [&_svg]:opacity-100"
-													: "text-muted-foreground hover:text-foreground",
-											)}
+								<div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
+									<Select
+										value={payerFilter}
+										onValueChange={(value) => {
+											setPayerFilter(value);
+											setSelectedIndex(-1);
+										}}
+									>
+										<SelectTrigger
+											size="sm"
+											className="min-w-44 flex-1 sm:flex-none"
 										>
-											<span className={cn(filter !== value && "opacity-60")}>
-												{icon}
-											</span>
-											{label}{" "}
-											<span
+											<SelectValue placeholder="Pessoa">
+												{payerFilter === ALL_PAYERS ? (
+													<span className="flex items-center gap-2">
+														<RiUserLine className="size-4" />
+														Todas as pessoas
+													</span>
+												) : selectedPayer ? (
+													<span className="flex items-center gap-1.5">
+														<PayerSelectContent
+															label={selectedPayer.label}
+															avatarUrl={selectedPayer.avatarUrl}
+														/>
+														{selectedPayer.value === adminPayerId && (
+															<RiVerifiedBadgeFill
+																className="size-4 text-blue-500"
+																aria-label="Pessoa principal"
+															/>
+														)}
+													</span>
+												) : null}
+											</SelectValue>
+										</SelectTrigger>
+										<SelectContent align="end">
+											<SelectItem value={ALL_PAYERS}>
+												<span className="flex items-center gap-2">
+													<span className="flex size-6 items-center justify-center rounded-full bg-muted">
+														<RiUserLine className="size-3.5" />
+													</span>
+													Todas as pessoas
+												</span>
+											</SelectItem>
+											{payerOptions.map((option) => (
+												<SelectItem key={option.value} value={option.value}>
+													<span className="flex items-center gap-1.5">
+														<PayerSelectContent
+															label={option.label}
+															avatarUrl={option.avatarUrl}
+														/>
+														{option.value === adminPayerId && (
+															<RiVerifiedBadgeFill
+																className="size-4 text-blue-500"
+																aria-label="Pessoa principal"
+															/>
+														)}
+													</span>
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+									<div className="flex items-center gap-1 rounded-lg border p-1">
+										{FILTERS.map(({ value, label, icon }) => (
+											<button
+												key={value}
+												type="button"
+												onClick={() => {
+													setFilter(value);
+													setSelectedIndex(-1);
+												}}
 												className={cn(
-													"tabular-nums",
-													filter === value ? "opacity-80" : "opacity-60",
+													"flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
+													filter === value
+														? "bg-primary text-primary-foreground [&_svg]:opacity-100"
+														: "text-muted-foreground hover:text-foreground",
 												)}
 											>
-												({counts[value]})
-											</span>
-										</button>
-									))}
+												<span className={cn(filter !== value && "opacity-60")}>
+													{icon}
+												</span>
+												{label}{" "}
+												<span
+													className={cn(
+														"tabular-nums",
+														filter === value ? "opacity-80" : "opacity-60",
+													)}
+												>
+													({counts[value]})
+												</span>
+											</button>
+										))}
+									</div>
 								</div>
 							</div>
 
@@ -199,7 +301,11 @@ export function AttachmentsPage({ attachments }: AttachmentsPageProps) {
 									<EmptyState
 										media={<RiAttachmentLine className="size-6 text-primary" />}
 										title="Nenhum anexo encontrado"
-										description="Não há anexos do tipo selecionado neste mês."
+										description={
+											payerAttachments.length === 0
+												? "Não há anexos desta pessoa neste mês."
+												: "Não há anexos do tipo selecionado neste mês."
+										}
 									/>
 								</div>
 							) : (

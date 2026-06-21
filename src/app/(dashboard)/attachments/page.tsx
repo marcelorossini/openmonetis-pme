@@ -1,6 +1,6 @@
 import { connection } from "next/server";
 import { AttachmentsPage } from "@/features/attachments/components/attachments-page";
-import { fetchAttachmentsForPeriod } from "@/features/attachments/queries";
+import { fetchAttachmentsPageData } from "@/features/attachments/queries";
 import { getUserId } from "@/shared/lib/auth/server";
 import { parsePeriodParam } from "@/shared/utils/period";
 
@@ -26,11 +26,14 @@ export default async function Page({ searchParams }: PageProps) {
 	const periodoParam = getSingleParam(resolvedSearchParams, "periodo");
 	const { period } = parsePeriodParam(periodoParam);
 
-	const attachments = await fetchAttachmentsForPeriod(userId, period);
+	const data = await fetchAttachmentsPageData(userId, period);
 
 	return (
 		<main className="flex flex-col gap-6">
-			<AttachmentsPage attachments={attachments} />
+			<AttachmentsPage
+				attachments={data?.attachments ?? []}
+				adminPayerId={data?.adminPayerId ?? ""}
+			/>
 		</main>
 	);
 }
