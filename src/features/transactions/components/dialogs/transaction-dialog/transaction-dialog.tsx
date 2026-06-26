@@ -35,11 +35,14 @@ import {
 } from "@/shared/components/ui/dialog";
 import { Label } from "@/shared/components/ui/label";
 import { useControlledState } from "@/shared/hooks/use-controlled-state";
+import { isFreelanceIncomeCategory } from "@/shared/lib/categories/freelance";
 import { AttachmentFilePicker } from "../../attachments/attachment-file-picker";
 import { AttachmentSection } from "../../attachments/attachment-section";
+import type { SelectOption } from "../../types";
 import { BasicFieldsSection } from "./basic-fields-section";
 import { BoletoFieldsSection } from "./boleto-fields-section";
 import { CategorySection } from "./category-section";
+import { ClientSection } from "./client-section";
 import { ConditionSection } from "./condition-section";
 import { NoteSection } from "./note-section";
 import { PayerSection } from "./payer-section";
@@ -50,6 +53,33 @@ import type {
 } from "./transaction-dialog-types";
 import { TransactionSummaryCard } from "./transaction-summary-card";
 
+function shouldShowClientField(
+	state: FormState,
+	categoryOptions: SelectOption[],
+) {
+	if (state.transactionType !== "Receita") {
+		return false;
+	}
+
+	const selectedCategory = categoryOptions.find(
+		(option) => option.value === state.categoryId,
+	);
+
+	return isFreelanceIncomeCategory({
+		name: selectedCategory?.label,
+		group: selectedCategory?.group,
+	});
+}
+
+function clearClientWhenHidden(
+	state: FormState,
+	categoryOptions: SelectOption[],
+): FormState {
+	return shouldShowClientField(state, categoryOptions)
+		? state
+		: { ...state, clientId: undefined };
+}
+
 export function TransactionDialog({
 	mode,
 	trigger,
@@ -58,6 +88,7 @@ export function TransactionDialog({
 	payerOptions,
 	splitPayerOptions,
 	defaultPayerId,
+	clientOptions,
 	accountOptions,
 	cardOptions,
 	categoryOptions,
@@ -142,7 +173,7 @@ export function TransactionDialog({
 				}
 			}
 
-			setFormState(initial);
+			setFormState(clearClientWhenHidden(initial, categoryOptions));
 			setErrorMessage(null);
 			setPendingFiles([]);
 			setPendingDetachIds([]);
@@ -162,6 +193,7 @@ export function TransactionDialog({
 		defaultAmount,
 		defaultTransactionType,
 		isImporting,
+		categoryOptions,
 		cardOptions,
 		mode,
 	]);
@@ -203,11 +235,13 @@ export function TransactionDialog({
 
 			const dependencies = applyFieldDependencies(key, value, prev, cardInfo);
 
-			return {
+			const nextState = {
 				...prev,
 				[key]: value,
 				...dependencies,
 			};
+
+			return clearClientWhenHidden(nextState, categoryOptions);
 		});
 	}
 
@@ -261,6 +295,10 @@ export function TransactionDialog({
 		}
 
 		const sanitizedAmount = Math.abs(amountValue);
+		const showClientField = shouldShowClientField(formState, categoryOptions);
+		const normalizedClientId = showClientField
+			? (formState.clientId ?? null)
+			: null;
 		const normalizedSplitShares = formState.isSplit
 			? [
 					{
@@ -332,6 +370,7 @@ export function TransactionDialog({
 			paymentMethod:
 				formState.paymentMethod as CreateTransactionInput["paymentMethod"],
 			payerId: formState.payerId ?? null,
+			clientId: normalizedClientId,
 			splitShares: normalizedSplitShares,
 			isSplit: formState.isSplit,
 			primarySplitAmount: formState.isSplit
@@ -435,6 +474,7 @@ export function TransactionDialog({
 					period: formState.period,
 					name: formState.name.trim(),
 					categoryId: formState.categoryId,
+					clientId: normalizedClientId ?? undefined,
 					note: formState.note.trim() || "",
 					payerId: formState.payerId,
 					accountId: formState.accountId,
@@ -469,6 +509,7 @@ export function TransactionDialog({
 					condition: formState.condition,
 					paymentMethod: formState.paymentMethod,
 					categoryId: formState.categoryId,
+					clientId: normalizedClientId ?? undefined,
 					note: formState.note.trim() || "",
 					payerId: formState.payerId,
 					accountId: formState.accountId,
@@ -570,6 +611,7 @@ export function TransactionDialog({
 	const showDueDate = formState.paymentMethod === "Boleto";
 	const showPaymentDate = mode === "update" && showDueDate;
 	const showSettledToggle = formState.paymentMethod !== "Cartão de crédito";
+	const showClientField = shouldShowClientField(formState, categoryOptions);
 	const isUpdateMode = mode === "update";
 	const disablePaymentMethod = Boolean(lockPaymentMethod && mode === "create");
 	const disableCardSelect = Boolean(lockCardSelection && mode === "create");
@@ -610,6 +652,14 @@ export function TransactionDialog({
 									Boolean(isNewWithType) && !forceShowTransactionType
 								}
 							/>
+
+							{showClientField ? (
+								<ClientSection
+									formState={formState}
+									onFieldChange={handleFieldChange}
+									clientOptions={clientOptions}
+								/>
+							) : null}
 						</div>
 
 						<div className="border-t border-border/40 my-3" />

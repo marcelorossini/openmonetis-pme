@@ -72,6 +72,7 @@ export type TransactionFormState = {
 	condition: string;
 	paymentMethod: string;
 	payerId: string | undefined;
+	clientId: string | undefined;
 	secondaryPayerId: string | undefined;
 	splitShares: Array<{ payerId: string; amount: string }>;
 	isSplit: boolean;
@@ -132,6 +133,10 @@ export function buildTransactionInitialState(
 	const fallbackPayerId = isImporting
 		? (defaultPayerId ?? null)
 		: (transaction?.payerId ?? defaultPayerId ?? null);
+	const fallbackClientId =
+		!isImporting && transaction?.transactionType === "Receita"
+			? transaction.clientId
+			: null;
 
 	const boletoPaymentDate =
 		transaction?.boletoPaymentDate ??
@@ -171,6 +176,7 @@ export function buildTransactionInitialState(
 		condition: transaction?.condition ?? TRANSACTION_CONDITIONS[0],
 		paymentMethod,
 		payerId: fallbackPayerId ?? undefined,
+		clientId: fallbackClientId ?? undefined,
 		secondaryPayerId: undefined,
 		splitShares: [],
 		isSplit: false,
@@ -269,6 +275,10 @@ export function applyFieldDependencies(
 		if (value !== "Recorrente") {
 			updates.recurrenceCount = "";
 		}
+	}
+
+	if (key === "transactionType" && value !== "Receita") {
+		updates.clientId = undefined;
 	}
 
 	if (key === "installmentCount" && typeof value === "string" && value) {

@@ -16,6 +16,7 @@ import {
 } from "@tanstack/react-table";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { type ReactNode, useMemo, useState } from "react";
+import { shouldShowClientColumn } from "@/features/transactions/lib/client-column";
 import type {
 	TransactionsExportContext,
 	TransactionsPaginationState,
@@ -56,6 +57,7 @@ type TransactionsTableProps = {
 	noteAsColumn?: boolean;
 	columnOrder?: string[] | null;
 	payerFilterOptions?: TransactionFilterOption[];
+	clientFilterOptions?: TransactionFilterOption[];
 	categoryFilterOptions?: TransactionFilterOption[];
 	accountCardFilterOptions?: AccountCardFilterOption[];
 	selectedPeriod?: string;
@@ -87,6 +89,7 @@ export function TransactionsTable({
 	noteAsColumn = false,
 	columnOrder: columnOrderPreference = null,
 	payerFilterOptions = [],
+	clientFilterOptions = [],
 	categoryFilterOptions = [],
 	accountCardFilterOptions = [],
 	selectedPeriod,
@@ -126,12 +129,14 @@ export function TransactionsTable({
 	});
 	const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 	const isServerPaginated = Boolean(serverPagination);
+	const showClientColumn = useMemo(() => shouldShowClientColumn(data), [data]);
 
 	const columns = useMemo(
 		() =>
 			getTransactionColumns({
 				currentUserId,
 				noteAsColumn,
+				showClientColumn,
 				onEdit,
 				onCopy,
 				onImport,
@@ -150,6 +155,7 @@ export function TransactionsTable({
 		[
 			currentUserId,
 			noteAsColumn,
+			showClientColumn,
 			columnOrderPreference,
 			onEdit,
 			onCopy,
@@ -327,6 +333,7 @@ export function TransactionsTable({
 					{showFilters ? (
 						<TransactionsFilters
 							payerOptions={payerFilterOptions}
+							clientOptions={clientFilterOptions}
 							categoryOptions={categoryFilterOptions}
 							accountCardOptions={accountCardFilterOptions}
 							className="w-full lg:flex-1 lg:justify-end"

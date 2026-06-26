@@ -45,6 +45,7 @@ interface InboxPageProps {
 	payerOptions: SelectOption[];
 	splitPayerOptions: SelectOption[];
 	defaultPayerId: string | null;
+	clientOptions: SelectOption[];
 	accountOptions: SelectOption[];
 	cardOptions: SelectOption[];
 	categoryOptions: SelectOption[];
@@ -62,6 +63,7 @@ export function InboxPage({
 	payerOptions,
 	splitPayerOptions,
 	defaultPayerId,
+	clientOptions,
 	accountOptions,
 	cardOptions,
 	categoryOptions,
@@ -506,6 +508,7 @@ export function InboxPage({
 				payerOptions={payerOptions}
 				splitPayerOptions={splitPayerOptions}
 				defaultPayerId={defaultPayerId}
+				clientOptions={clientOptions}
 				accountOptions={accountOptions}
 				cardOptions={cardOptions}
 				categoryOptions={categoryOptions}

@@ -3,6 +3,7 @@ type TransactionExportFilters = {
 	conditionFilters: string[];
 	paymentFilters: string[];
 	payerFilters: string[];
+	clientFilters: string[];
 	categoryFilters: string[];
 	accountCardFilters: string[];
 	searchFilter: string | null;

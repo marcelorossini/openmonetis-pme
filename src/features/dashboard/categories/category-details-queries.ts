@@ -70,6 +70,7 @@ export async function fetchCategoryDetails(
 					financialAccount: true,
 					card: true,
 					category: true,
+					client: true,
 				},
 				orderBy: [
 					desc(transactions.purchaseDate),

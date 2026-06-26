@@ -25,6 +25,7 @@ const EMPTY_DIALOG_DATA = {
 	payerOptions: [],
 	splitPayerOptions: [],
 	defaultPayerId: null,
+	clientOptions: [],
 	accountOptions: [],
 	cardOptions: [],
 	categoryOptions: [],
@@ -67,6 +68,7 @@ export default async function Page({ searchParams }: PageProps) {
 				payerOptions={dialogData.payerOptions}
 				splitPayerOptions={dialogData.splitPayerOptions}
 				defaultPayerId={dialogData.defaultPayerId}
+				clientOptions={dialogData.clientOptions}
 				accountOptions={dialogData.accountOptions}
 				cardOptions={dialogData.cardOptions}
 				categoryOptions={dialogData.categoryOptions}

@@ -13,6 +13,7 @@ import {
 import {
 	cards,
 	type categories,
+	type clients,
 	financialAccounts,
 	type payers,
 	transactionAttachments,
@@ -47,6 +48,7 @@ type PayerRow = typeof payers.$inferSelect;
 type AccountRow = typeof financialAccounts.$inferSelect;
 type CardRow = typeof cards.$inferSelect;
 type CategoryRow = typeof categories.$inferSelect;
+type ClientRow = typeof clients.$inferSelect;
 
 export type ResolvedSearchParams =
 	| Record<string, string | string[] | undefined>
@@ -60,6 +62,7 @@ export type TransactionSearchFilters = {
 	conditionFilters: string[];
 	paymentFilters: string[];
 	payerFilters: string[];
+	clientFilters: string[];
 	categoryFilters: string[];
 	accountCardFilters: string[];
 	searchFilter: string | null;
@@ -88,6 +91,8 @@ type CategorySluggedOption = BaseSluggedOption & {
 	icon: string | null;
 };
 
+type ClientSluggedOption = BaseSluggedOption;
+
 type AccountSluggedOption = BaseSluggedOption & {
 	kind: "conta";
 	logo: string | null;
@@ -103,6 +108,7 @@ type CardSluggedOption = BaseSluggedOption & {
 
 export type SluggedFilters = {
 	payerFiltersRaw: PayerSluggedOption[];
+	clientFiltersRaw: ClientSluggedOption[];
 	categoryFiltersRaw: CategorySluggedOption[];
 	accountFiltersRaw: AccountSluggedOption[];
 	cardFiltersRaw: CardSluggedOption[];
@@ -110,6 +116,7 @@ export type SluggedFilters = {
 
 export type SlugMaps = {
 	payer: Map<string, string>;
+	client: Map<string, string>;
 	category: Map<string, string>;
 	financialAccount: Map<string, string>;
 	card: Map<string, string>;
@@ -131,10 +138,12 @@ type TransactionOptionSets = {
 	payerOptions: SelectOption[];
 	splitPayerOptions: SelectOption[];
 	defaultPayerId: string | null;
+	clientOptions: SelectOption[];
 	accountOptions: SelectOption[];
 	cardOptions: SelectOption[];
 	categoryOptions: SelectOption[];
 	payerFilterOptions: FilterOption[];
+	clientFilterOptions: FilterOption[];
 	categoryFilterOptions: FilterOption[];
 	accountCardFilterOptions: AccountCardFilterOption[];
 };
@@ -181,6 +190,7 @@ export const extractTransactionSearchFilters = (
 	conditionFilters: getMultiParam(params, "condition"),
 	paymentFilters: getMultiParam(params, "payment"),
 	payerFilters: getMultiParam(params, "payer"),
+	clientFilters: getMultiParam(params, "client"),
 	categoryFilters: getMultiParam(params, "category"),
 	accountCardFilters: getMultiParam(params, "accountCard"),
 	searchFilter: getSingleParam(params, "q"),
@@ -275,16 +285,19 @@ const toOption = (
 
 export const buildSluggedFilters = ({
 	payerRows,
+	clientRows,
 	categoryRows,
 	accountRows,
 	cardRows,
 }: {
 	payerRows: PayerRow[];
+	clientRows: ClientRow[];
 	categoryRows: CategoryRow[];
 	accountRows: AccountRow[];
 	cardRows: CardRow[];
 }): SluggedFilters => {
 	const payerSlugger = createSlugGenerator();
+	const clientSlugger = createSlugGenerator();
 	const categorySlugger = createSlugGenerator();
 	const accountCardSlugger = createSlugGenerator();
 
@@ -307,6 +320,15 @@ export const buildSluggedFilters = ({
 			slug: categorySlugger(label),
 			type: category.type ?? null,
 			icon: category.icon ?? null,
+		};
+	});
+
+	const clientFiltersRaw = clientRows.map((client) => {
+		const label = normalizeLabel(client.name);
+		return {
+			id: client.id,
+			label,
+			slug: clientSlugger(label),
 		};
 	});
 
@@ -337,6 +359,7 @@ export const buildSluggedFilters = ({
 
 	return {
 		payerFiltersRaw,
+		clientFiltersRaw,
 		categoryFiltersRaw,
 		accountFiltersRaw,
 		cardFiltersRaw,
@@ -345,11 +368,13 @@ export const buildSluggedFilters = ({
 
 export const buildSlugMaps = ({
 	payerFiltersRaw,
+	clientFiltersRaw,
 	categoryFiltersRaw,
 	accountFiltersRaw,
 	cardFiltersRaw,
 }: SluggedFilters): SlugMaps => ({
 	payer: new Map(payerFiltersRaw.map(({ slug, id }) => [slug, id])),
+	client: new Map(clientFiltersRaw.map(({ slug, id }) => [slug, id])),
 	category: new Map(categoryFiltersRaw.map(({ slug, id }) => [slug, id])),
 	financialAccount: new Map(
 		accountFiltersRaw.map(({ slug, id }) => [slug, id]),
@@ -457,6 +482,15 @@ export const buildTransactionWhere = ({
 		}
 	}
 
+	if (filters.clientFilters.length > 0) {
+		const ids = filters.clientFilters
+			.map((slug) => slugMaps.client.get(slug))
+			.filter((id): id is string => Boolean(id));
+		if (ids.length > 0) {
+			where.push(inArray(transactions.clientId, ids));
+		}
+	}
+
 	if (filters.categoryFilters.length > 0) {
 		const ids = filters.categoryFilters
 			.map((slug) => slugMaps.category.get(slug))
@@ -547,6 +581,7 @@ type TransactionRowWithRelations = Partial<typeof transactions.$inferSelect> & {
 	financialAccount?: AccountRow | null;
 	card?: CardRow | null;
 	category?: CategoryRow | null;
+	client?: ClientRow | null;
 	hasAttachments?: boolean;
 };
 
@@ -575,6 +610,8 @@ export const mapTransactionsData = (rows: TransactionRowWithRelations[]) =>
 		categoriaName: item.category?.name ?? null,
 		categoriaType: item.category?.type ?? null,
 		categoriaIcon: item.category?.icon ?? null,
+		clientId: item.clientId ?? null,
+		clientName: item.client?.name ?? null,
 		installmentCount: item.installmentCount ?? null,
 		recurrenceCount: item.recurrenceCount ?? null,
 		currentInstallment: item.currentInstallment ?? null,
@@ -605,6 +642,7 @@ const sortByLabel = <T extends { label: string }>(items: T[]) =>
 
 export const buildOptionSets = ({
 	payerFiltersRaw,
+	clientFiltersRaw,
 	categoryFiltersRaw,
 	accountFiltersRaw,
 	cardFiltersRaw,
@@ -627,6 +665,19 @@ export const buildOptionSets = ({
 			slug,
 			label,
 			avatarUrl,
+		})),
+	);
+
+	const clientOptions = sortByLabel(
+		clientFiltersRaw.map(({ id, label, slug }) =>
+			toOption(id, label, undefined, undefined, slug),
+		),
+	);
+
+	const clientFilterOptions = sortByLabel(
+		clientFiltersRaw.map(({ slug, label }) => ({
+			slug,
+			label,
 		})),
 	);
 
@@ -712,10 +763,12 @@ export const buildOptionSets = ({
 		payerOptions,
 		splitPayerOptions,
 		defaultPayerId,
+		clientOptions,
 		accountOptions,
 		cardOptions,
 		categoryOptions,
 		payerFilterOptions,
+		clientFilterOptions,
 		categoryFilterOptions,
 		accountCardFilterOptions,
 	};

@@ -360,6 +360,7 @@ export function AttachmentsPage({
 					payerOptions={dialogOptions.payerOptions}
 					splitPayerOptions={dialogOptions.splitPayerOptions}
 					defaultPayerId={dialogOptions.defaultPayerId}
+					clientOptions={dialogOptions.clientOptions}
 					accountOptions={dialogOptions.accountOptions}
 					cardOptions={dialogOptions.cardOptions}
 					categoryOptions={dialogOptions.categoryOptions}

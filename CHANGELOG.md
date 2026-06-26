@@ -5,6 +5,17 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/),
 e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
+## [Não lançado]
+
+Esta próxima versão adiciona uma organização leve para receitas de serviços prestados, permitindo acompanhar lançamentos por cliente sem transformar o OpenMonetis em uma ferramenta de vendas.
+
+### Adicionado
+- Clientes: nova área em `/clients` para cadastrar clientes ativos e inativos com anotação opcional.
+- Lançamentos: receitas agora podem ser vinculadas opcionalmente a um cliente, com coluna e filtro dedicados na lista de lançamentos.
+
+### Corrigido
+- Lançamentos: o campo Cliente agora fica restrito a receitas da categoria `Serviços Prestados`, mantendo compatibilidade com a categoria legada `Freelance` quando houver conflito manual na migração.
+
 ## [2.7.9] - 2026-06-21
 
 Esta versão torna a publicação mais previsível ao separar a validação contínua da entrega de versões oficiais. Pull requests e a branch principal continuam sendo verificadas, enquanto imagens Docker e releases passam a ser produzidas somente a partir de uma tag SemVer validada.

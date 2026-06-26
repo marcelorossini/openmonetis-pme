@@ -12,6 +12,8 @@ export type TransactionItem = {
 	pagadorName: string | null;
 	pagadorAvatar: string | null;
 	pagadorRole: string | null;
+	clientId: string | null;
+	clientName: string | null;
 	accountId: string | null;
 	contaName: string | null;
 	contaLogo: string | null;
