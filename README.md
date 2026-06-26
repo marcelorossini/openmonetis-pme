@@ -65,7 +65,7 @@ A ideia é simples: ter um lugar onde consigo ver todas as minhas contas, cartõ
 
 ### Funcionalidades
 
-💰 **Contas e transações** — Contas bancárias, cartões, dinheiro. Receitas, despesas, rendimentos e transferências. Categorização, divisão de lançamentos entre várias pessoas, filtros combináveis com intervalo de datas, extratos detalhados com identificação visual clara da conta e importação de extratos OFX e XLS/XLSX com detecção automática de categoria.
+💰 **Contas e transações** — Contas bancárias, cartões, dinheiro. Receitas, despesas, rendimentos e transferências. Categorização, divisão de lançamentos entre várias pessoas, vínculo opcional de receitas de serviços prestados a clientes, filtros combináveis com intervalo de datas, extratos detalhados com identificação visual clara da conta e importação de extratos OFX e XLS/XLSX com detecção automática de categoria.
 
 📊 **Dashboard e relatórios** — Widgets personalizáveis com listas consistentes, métricas com atalhos para lançamentos, gráficos de evolução, comparativos por categoria, tendências, uso de cartões, top estabelecimentos e navegação direta entre meses pelo seletor de período. Exportação em PDF e Excel.
 

@@ -28,6 +28,7 @@ const exportTransactionsSchema: z.ZodType<TransactionsExportContext> = z.object(
 			conditionFilters: z.array(z.string()),
 			paymentFilters: z.array(z.string()),
 			payerFilters: z.array(z.string()),
+			clientFilters: z.array(z.string()),
 			categoryFilters: z.array(z.string()),
 			accountCardFilters: z.array(z.string()),
 			searchFilter: z.string().nullable(),

@@ -222,8 +222,22 @@
 		{
 			"idx": 32,
 			"version": "7",
-			"when": 1782475788713,
-			"tag": "0032_mighty_slipstream",
+			"when": 1782444014459,
+			"tag": "0032_glossy_bromley",
+			"breakpoints": true
+		},
+		{
+			"idx": 33,
+			"version": "7",
+			"when": 1782470904718,
+			"tag": "0033_rename_freelance_category",
+			"breakpoints": true
+		},
+		{
+			"idx": 34,
+			"version": "7",
+			"when": 1782481177699,
+			"tag": "0034_loving_wendell_rand",
 			"breakpoints": true
 		}
 	]

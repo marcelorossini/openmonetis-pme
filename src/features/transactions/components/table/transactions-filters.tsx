@@ -34,6 +34,7 @@ import {
 	parseDateFilterParam,
 	parsePositiveAmount,
 } from "@/features/transactions/lib/page-helpers";
+import { ClientAvatarLabel } from "@/shared/components/entity-avatar";
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
 import { Checkbox } from "@/shared/components/ui/checkbox";
@@ -402,6 +403,7 @@ function MultiSelectFilter({
 
 interface TransactionsFiltersProps {
 	payerOptions: TransactionFilterOption[];
+	clientOptions: TransactionFilterOption[];
 	categoryOptions: TransactionFilterOption[];
 	accountCardOptions: AccountCardFilterOption[];
 	className?: string;
@@ -411,6 +413,7 @@ interface TransactionsFiltersProps {
 
 export function TransactionsFilters({
 	payerOptions,
+	clientOptions,
 	categoryOptions,
 	accountCardOptions,
 	className,
@@ -568,6 +571,16 @@ export function TransactionsFilters({
 		[payerOptions],
 	);
 
+	const clientMultiOptions = useMemo<MultiOption[]>(
+		() =>
+			clientOptions.map((option) => ({
+				value: option.slug,
+				label: option.label,
+				render: <ClientAvatarLabel name={option.label} size="sm" />,
+			})),
+		[clientOptions],
+	);
+
 	const categoryMultiOptions = useMemo<MultiOption[]>(
 		() =>
 			categoryOptions.map((option) => ({
@@ -610,6 +623,7 @@ export function TransactionsFilters({
 		searchParams.getAll("condition").length > 0,
 		searchParams.getAll("payment").length > 0,
 		searchParams.getAll("payer").length > 0,
+		searchParams.getAll("client").length > 0,
 		searchParams.getAll("category").length > 0,
 		searchParams.getAll("accountCard").length > 0,
 		Boolean(searchParams.get("settled")),
@@ -706,6 +720,7 @@ export function TransactionsFilters({
 	addMultiValueChips("condition", "Condição", conditionOptions);
 	addMultiValueChips("payment", "Pagamento", paymentOptions);
 	addMultiValueChips("payer", "Pessoa", payerMultiOptions);
+	addMultiValueChips("client", "Cliente", clientMultiOptions);
 	addMultiValueChips("category", "Categoria", categoryMultiOptions);
 	addMultiValueChips("accountCard", "Conta/cartão", accountCardMultiOptions);
 
@@ -956,6 +971,23 @@ export function TransactionsFilters({
 													disabled={isPending}
 													searchable
 													searchPlaceholder="Buscar pessoa..."
+												/>
+											</div>
+
+											<div className="space-y-1.5">
+												<label className="text-xs font-medium text-muted-foreground">
+													Cliente
+												</label>
+												<MultiSelectFilter
+													placeholder="Todos"
+													options={clientMultiOptions}
+													selected={getParamValues("client")}
+													onChange={(values) =>
+														handleMultiFilterChange("client", values)
+													}
+													disabled={isPending}
+													searchable
+													searchPlaceholder="Buscar cliente..."
 												/>
 											</div>
 

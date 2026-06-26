@@ -282,6 +282,31 @@ export const payers = pgTable(
 	}),
 );
 
+export const clients = pgTable(
+	"clientes",
+	{
+		id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+		name: text("nome").notNull(),
+		note: text("anotacao"),
+		status: text("status").notNull(),
+		createdAt: timestamp("created_at", {
+			mode: "date",
+			withTimezone: true,
+		})
+			.notNull()
+			.defaultNow(),
+		userId: text("user_id")
+			.notNull()
+			.references(() => user.id, { onDelete: "cascade" }),
+	},
+	(table) => ({
+		userIdStatusIdx: index("clientes_user_id_status_idx").on(
+			table.userId,
+			table.status,
+		),
+	}),
+);
+
 export const payerShares = pgTable(
 	"compartilhamentos_pagador",
 	{
@@ -693,6 +718,10 @@ export const transactions = pgTable(
 			onDelete: "cascade",
 			onUpdate: "cascade",
 		}),
+		clientId: uuid("cliente_id").references(() => clients.id, {
+			onDelete: "set null",
+			onUpdate: "cascade",
+		}),
 		seriesId: uuid("series_id"),
 		splitGroupId: uuid("split_group_id"),
 		transferId: uuid("transfer_id"),
@@ -747,6 +776,7 @@ export const transactions = pgTable(
 		// FK indexes: evitam seq scan em deletes/updates nas tabelas pai
 		accountIdIdx: index("lancamentos_conta_id_idx").on(table.accountId),
 		categoryIdIdx: index("lancamentos_categoria_id_idx").on(table.categoryId),
+		clientIdIdx: index("lancamentos_cliente_id_idx").on(table.clientId),
 		anticipationIdIdx: index("lancamentos_antecipacao_id_idx").on(
 			table.anticipationId,
 		),
@@ -768,6 +798,7 @@ export const userRelations = relations(user, ({ many, one }) => ({
 	transactions: many(transactions),
 	budgets: many(budgets),
 	payers: many(payers),
+	clients: many(clients),
 	installmentAnticipations: many(installmentAnticipations),
 	apiTokens: many(apiTokens),
 	inboxItems: many(inboxItems),
@@ -816,6 +847,14 @@ export const payersRelations = relations(payers, ({ one, many }) => ({
 	}),
 	transactions: many(transactions),
 	shares: many(payerShares),
+}));
+
+export const clientsRelations = relations(clients, ({ one, many }) => ({
+	user: one(user, {
+		fields: [clients.userId],
+		references: [user.id],
+	}),
+	transactions: many(transactions),
 }));
 
 export const payerSharesRelations = relations(payerShares, ({ one }) => ({
@@ -923,6 +962,10 @@ export const transactionsRelations = relations(
 		payer: one(payers, {
 			fields: [transactions.payerId],
 			references: [payers.id],
+		}),
+		client: one(clients, {
+			fields: [transactions.clientId],
+			references: [clients.id],
 		}),
 		anticipation: one(installmentAnticipations, {
 			fields: [transactions.anticipationId],

@@ -12,7 +12,10 @@ import {
 	formatCondition,
 	formatPeriod,
 } from "@/features/transactions/lib/formatting-helpers";
-import { EstablishmentLogo } from "@/shared/components/entity-avatar";
+import {
+	ClientAvatarLabel,
+	EstablishmentLogo,
+} from "@/shared/components/entity-avatar";
 import { TransactionTypeBadge } from "@/shared/components/transaction-type-badge";
 import {
 	Avatar,
@@ -247,6 +250,18 @@ export function TransactionDetailsDialog({
 											</span>
 										);
 									})()}
+								</li>
+
+								<li className="min-w-0 flex items-center justify-between gap-3">
+									<span className="text-muted-foreground">Cliente</span>
+									{transaction.clientName?.trim() ? (
+										<ClientAvatarLabel
+											name={transaction.clientName.trim()}
+											size="xs"
+										/>
+									) : (
+										<span className="min-w-0 truncate">—</span>
+									)}
 								</li>
 
 								{isBoleto && transaction.dueDate && (

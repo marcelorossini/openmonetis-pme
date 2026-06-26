@@ -44,6 +44,7 @@ export type DashboardWidgetQuickActionOptions = {
 	payerOptions: SelectOption[];
 	splitPayerOptions: SelectOption[];
 	defaultPayerId: string | null;
+	clientOptions: SelectOption[];
 	accountOptions: SelectOption[];
 	cardOptions: SelectOption[];
 	categoryOptions: SelectOption[];

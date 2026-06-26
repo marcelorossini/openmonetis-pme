@@ -10,6 +10,7 @@ import Link from "next/link";
 import { DEFAULT_TRANSACTIONS_COLUMN_ORDER } from "@/features/transactions/lib/column-order";
 import {
 	CategoryIconBadge,
+	ClientAvatarLabel,
 	EstablishmentLogo,
 } from "@/shared/components/entity-avatar";
 import MoneyValues from "@/shared/components/money-values";
@@ -38,6 +39,7 @@ import { TransactionSettlementButton } from "./transaction-settlement-button";
 type BuildColumnsArgs = {
 	currentUserId: string;
 	noteAsColumn: boolean;
+	showClientColumn: boolean;
 	onEdit?: (item: TransactionItem) => void;
 	onCopy?: (item: TransactionItem) => void;
 	onImport?: (item: TransactionItem) => void;
@@ -102,6 +104,7 @@ function reorderColumnsByPreference<T>(
 function buildColumns({
 	currentUserId,
 	noteAsColumn,
+	showClientColumn,
 	onEdit,
 	onCopy,
 	onImport,
@@ -505,6 +508,30 @@ function buildColumns({
 			},
 		},
 	];
+
+	if (showClientColumn) {
+		const payerIndex = columns.findIndex(
+			(c) => getColumnId(c) === "pagadorName",
+		);
+		const clientColumn: ColumnDef<TransactionItem> = {
+			accessorKey: "clientName",
+			header: "Cliente",
+			cell: ({ row }) => {
+				const { clientName } = row.original;
+				if (!clientName) {
+					return <span className="text-muted-foreground">—</span>;
+				}
+				return (
+					<ClientAvatarLabel
+						name={clientName}
+						size="md"
+						labelClassName="font-medium"
+					/>
+				);
+			},
+		};
+		columns.splice(payerIndex, 0, clientColumn);
+	}
 
 	if (noteAsColumn) {
 		const accountCardIndex = columns.findIndex((c) => c.id === "contaCartao");

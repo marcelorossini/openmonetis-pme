@@ -33,7 +33,7 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
 
 	// Receitas
 	{ name: "Salário", type: "receita", icon: "RiWallet3Line" },
-	{ name: "Freelance", type: "receita", icon: "RiUserStarLine" },
+	{ name: "Serviços Prestados", type: "receita", icon: "RiUserStarLine" },
 	{ name: "Rendimentos", type: "receita", icon: "RiFundsLine" },
 	{ name: "Investimentos", type: "receita", icon: "RiStockLine" },
 	{ name: "Vendas", type: "receita", icon: "RiShoppingCartLine" },

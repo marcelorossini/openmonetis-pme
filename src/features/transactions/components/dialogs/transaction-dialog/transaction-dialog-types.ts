@@ -11,6 +11,7 @@ export interface TransactionDialogProps {
 	payerOptions: SelectOption[];
 	splitPayerOptions: SelectOption[];
 	defaultPayerId?: string | null;
+	clientOptions: SelectOption[];
 	accountOptions: SelectOption[];
 	cardOptions: SelectOption[];
 	categoryOptions: SelectOption[];
@@ -39,6 +40,7 @@ export interface TransactionDialogProps {
 		period: string;
 		name: string;
 		categoryId: string | undefined;
+		clientId: string | undefined;
 		note: string;
 		payerId: string | undefined;
 		accountId: string | undefined;
@@ -60,6 +62,7 @@ export interface TransactionDialogProps {
 		condition: string;
 		paymentMethod: string;
 		categoryId: string | undefined;
+		clientId: string | undefined;
 		note: string;
 		payerId: string | undefined;
 		accountId: string | undefined;
@@ -98,6 +101,10 @@ export interface PayerSectionProps extends BaseFieldSectionProps {
 	payerOptions: SelectOption[];
 	splitPayerOptions: SelectOption[];
 	totalAmount: number;
+}
+
+export interface ClientSectionProps extends BaseFieldSectionProps {
+	clientOptions: SelectOption[];
 }
 
 export interface PaymentMethodSectionProps extends BaseFieldSectionProps {
