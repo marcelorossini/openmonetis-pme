@@ -218,6 +218,13 @@
 			"when": 1782051007412,
 			"tag": "0031_lame_cerise",
 			"breakpoints": true
+		},
+		{
+			"idx": 32,
+			"version": "7",
+			"when": 1782569103402,
+			"tag": "0032_bumpy_spencer_smythe",
+			"breakpoints": true
 		}
 	]
 }

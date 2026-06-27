@@ -1,0 +1,1 @@
+ALTER TABLE "preferencias_usuario" ADD COLUMN "ocultar_parcelas_antecipadas" boolean DEFAULT false NOT NULL;

@@ -36,6 +36,7 @@ export async function fetchCategoryDetails(
 	userId: string,
 	categoryId: string,
 	period: string,
+	hideAnticipatedInstallments = false,
 ): Promise<CategoryDetailData | null> {
 	const category = await db.query.categories.findFirst({
 		where: and(eq(categories.userId, userId), eq(categories.id, categoryId)),
@@ -63,6 +64,14 @@ export async function fetchCategoryDetails(
 					eq(transactions.transactionType, transactionType),
 					eq(transactions.period, period),
 					eq(transactions.payerId, adminPayerId),
+					...(hideAnticipatedInstallments
+						? [
+								or(
+									isNull(transactions.isAnticipated),
+									eq(transactions.isAnticipated, false),
+								),
+							]
+						: []),
 					...(isInvoiceCategory ? [] : [sanitizedNote]),
 				),
 				with: {

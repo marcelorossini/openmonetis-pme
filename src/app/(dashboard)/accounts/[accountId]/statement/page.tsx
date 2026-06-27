@@ -109,6 +109,8 @@ export default async function Page({ params, searchParams }: PageProps) {
 		filters: searchFilters,
 		slugMaps,
 		accountId: account.id,
+		hideAnticipatedInstallments:
+			userPreferences?.hideAnticipatedInstallments ?? false,
 	});
 
 	const transactionsPage = await fetchAccountTransactionsPage(

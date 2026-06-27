@@ -82,6 +82,8 @@ export default async function Page({ params, searchParams }: PageProps) {
 		filters: searchFilters,
 		slugMaps,
 		cardId: card.id,
+		hideAnticipatedInstallments:
+			userPreferences?.hideAnticipatedInstallments ?? false,
 	});
 
 	const transactionRows = await fetchCardTransactions(filters);

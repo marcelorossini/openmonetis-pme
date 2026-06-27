@@ -43,6 +43,7 @@ interface PreferencesFormProps {
 	transactionsColumnOrder: string[] | null;
 	attachmentMaxSizeMb: number;
 	showTransactionSummary: boolean;
+	hideAnticipatedInstallments: boolean;
 }
 
 function SortableColumnItem({ id }: { id: string }) {
@@ -87,6 +88,7 @@ export function PreferencesForm({
 	transactionsColumnOrder: initialColumnOrder,
 	attachmentMaxSizeMb: initialAttachmentMaxSizeMb,
 	showTransactionSummary: initialShowTransactionSummary,
+	hideAnticipatedInstallments: initialHideAnticipatedInstallments,
 }: PreferencesFormProps) {
 	const router = useRouter();
 	const [isPending, startTransition] = useTransition();
@@ -109,6 +111,8 @@ export function PreferencesForm({
 	const [showTransactionSummary, setShowTransactionSummary] = useState(
 		initialShowTransactionSummary,
 	);
+	const [hideAnticipatedInstallments, setHideAnticipatedInstallments] =
+		useState(initialHideAnticipatedInstallments);
 
 	const sensors = useSensors(
 		useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -135,6 +139,7 @@ export function PreferencesForm({
 				transactionsColumnOrder: columnOrder,
 				attachmentMaxSizeMb,
 				showTransactionSummary,
+				hideAnticipatedInstallments,
 			});
 
 			if (result.success) {
@@ -192,6 +197,26 @@ export function PreferencesForm({
 						id="show-transaction-summary"
 						checked={showTransactionSummary}
 						onCheckedChange={setShowTransactionSummary}
+						disabled={isPending}
+					/>
+				</section>
+
+				<Separator />
+
+				<section className="flex items-center justify-between max-w-md gap-4">
+					<div className="space-y-2">
+						<Label htmlFor="hide-anticipated-installments" className="text-sm">
+							Ocultar parcelas antecipadas
+						</Label>
+						<p className="text-sm text-muted-foreground">
+							Quando ativo, parcelas já antecipadas não aparecem na tabela de
+							lançamentos.
+						</p>
+					</div>
+					<Switch
+						id="hide-anticipated-installments"
+						checked={hideAnticipatedInstallments}
+						onCheckedChange={setHideAnticipatedInstallments}
 						disabled={isPending}
 					/>
 				</section>

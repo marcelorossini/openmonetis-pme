@@ -157,6 +157,9 @@ export const userPreferences = pgTable("preferencias_usuario", {
 	showTransactionSummary: boolean("mostrar_resumo_lancamento")
 		.notNull()
 		.default(true),
+	hideAnticipatedInstallments: boolean("ocultar_parcelas_antecipadas")
+		.notNull()
+		.default(false),
 	dashboardWidgets: jsonb("dashboard_widgets").$type<{
 		order: string[];
 		hidden: string[];

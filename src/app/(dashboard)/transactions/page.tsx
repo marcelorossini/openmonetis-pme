@@ -53,6 +53,8 @@ export default async function Page({ searchParams }: PageProps) {
 		period: selectedPeriod,
 		filters: searchFilters,
 		slugMaps,
+		hideAnticipatedInstallments:
+			userPreferences?.hideAnticipatedInstallments ?? false,
 	});
 
 	const [transactionsPage, estabelecimentos] = await Promise.all([
