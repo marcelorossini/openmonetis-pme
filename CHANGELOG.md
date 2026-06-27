@@ -5,6 +5,21 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/),
 e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
+## [Não lançado]
+
+Esta próxima versão amplia o vínculo de lançamentos com contatos externos: categorias passam a definir quando pedem cliente ou fornecedor, a API do Companion ganha mais contexto para autoimportação e a nova área de integrações resolve valores externos sem depender de ajuste manual repetitivo na inbox.
+
+### Adicionado
+- Clientes e fornecedores: nova área em `/parties` para cadastrar contatos ativos e inativos com tipo, documento, email, telefone e anotação opcional.
+- Categorias: novo campo de vínculo no lançamento para escolher nenhum, cliente ou fornecedor.
+- Lançamentos: o campo Cliente/Fornecedor aparece conforme a categoria selecionada, com coluna e filtro dedicados na lista de lançamentos.
+- Companion/API: endpoints de pré-lançamentos agora aceitam conta, cartão, categoria, pessoa, cliente/fornecedor, forma de pagamento, data da compra e tentativa de importação automática para lançamento.
+- Integrações: nova aba em `/settings` para mapear valores externos de cliente/fornecedor e categoria por `sourceApp` e `profileKey`, com fila de pendências derivada da inbox.
+
+### Alterado
+- Clientes: a rota antiga `/clients` redireciona para `/parties`.
+- Integrações: contas passam a participar do mapeamento da inbox e cada cadastro de conta, categoria e cliente/fornecedor agora oferece um atalho direto para gerenciar seus vínculos em `Ajustes > Integrações`.
+
 ## [2.7.9] - 2026-06-21
 
 Esta versão torna a publicação mais previsível ao separar a validação contínua da entrega de versões oficiais. Pull requests e a branch principal continuam sendo verificadas, enquanto imagens Docker e releases passam a ser produzidas somente a partir de uma tag SemVer validada.

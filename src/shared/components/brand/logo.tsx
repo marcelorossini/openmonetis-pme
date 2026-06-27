@@ -1,5 +1,8 @@
+"use client";
+
 import { LogoIcon } from "@/shared/components/brand/logo-icon";
 import { LogoText } from "@/shared/components/brand/logo-text";
+import { useBranding } from "@/shared/components/providers/branding-provider";
 import { cn } from "@/shared/utils/ui";
 
 interface LogoProps {
@@ -25,6 +28,36 @@ export function Logo({
 	iconClassName,
 	textClassName,
 }: LogoProps) {
+	const { logoUrl, logoFileName } = useBranding();
+	const customLogoAlt = logoFileName
+		? `Logo personalizada: ${logoFileName}`
+		: "Logo personalizada";
+
+	if (logoUrl) {
+		if (variant === "small") {
+			return (
+				<img
+					src={logoUrl}
+					alt={customLogoAlt}
+					className={cn("size-8 shrink-0 object-contain", className)}
+				/>
+			);
+		}
+
+		return (
+			<div className={cn("flex items-center py-3", className)}>
+				<img
+					src={logoUrl}
+					alt={customLogoAlt}
+					className={cn(
+						"h-9 w-auto max-w-[150px] shrink-0 object-contain",
+						iconClassName,
+					)}
+				/>
+			</div>
+		);
+	}
+
 	if (variant === "compact") {
 		return (
 			<div className={cn("flex items-center gap-1", className)}>

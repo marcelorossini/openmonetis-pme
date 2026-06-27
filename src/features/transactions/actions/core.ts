@@ -6,6 +6,7 @@ import {
 	categories,
 	financialAccounts,
 	invoices,
+	parties,
 	payers,
 	transactions,
 } from "@/db/schema";
@@ -21,6 +22,10 @@ import {
 	INITIAL_BALANCE_TRANSACTION_TYPE,
 } from "@/shared/lib/accounts/constants";
 import { revalidateForEntity } from "@/shared/lib/actions/helpers";
+import {
+	canCategoryLinkParty,
+	normalizeCategoryPartyKind,
+} from "@/shared/lib/categories/party-kind";
 import { db } from "@/shared/lib/db";
 import { INVOICE_PAYMENT_STATUS } from "@/shared/lib/invoices";
 import { noteSchema, uuidSchema } from "@/shared/lib/schemas/common";
@@ -65,6 +70,23 @@ export async function fetchOwnedCategoryIds(
 		.select({ id: categories.id })
 		.from(categories)
 		.where(and(eq(categories.userId, userId), inArray(categories.id, ids)));
+
+	return new Set(rows.map((row) => row.id));
+}
+
+export async function fetchOwnedPartyIds(
+	userId: string,
+	partyIds: Array<string | null | undefined>,
+): Promise<Set<string>> {
+	const ids = normalizeIds(partyIds);
+	if (ids.length === 0) {
+		return new Set();
+	}
+
+	const rows = await db
+		.select({ id: parties.id })
+		.from(parties)
+		.where(and(eq(parties.userId, userId), inArray(parties.id, ids)));
 
 	return new Set(rows.map((row) => row.id));
 }
@@ -144,6 +166,7 @@ export async function validateAllOwnership(
 		secondaryPayerId?: string | null;
 		splitPayerIds?: Array<string | null | undefined>;
 		categoryId?: string | null;
+		partyId?: string | null;
 		accountId?: string | null;
 		cardId?: string | null;
 	},
@@ -153,19 +176,26 @@ export async function validateAllOwnership(
 		fields.secondaryPayerId,
 		...(fields.splitPayerIds ?? []),
 	];
-	const [ownedPayerIds, ownedCategoryIds, ownedAccountIds, ownedCardIds] =
-		await Promise.all([
-			fetchOwnedPayerIds(userId, payerIds),
-			fetchOwnedCategoryIds(userId, [fields.categoryId]),
-			fetchOwnedAccountIds(userId, [fields.accountId]),
-			fetchOwnedCardIds(userId, [fields.cardId]),
-		]);
+	const [
+		ownedPayerIds,
+		ownedCategoryIds,
+		ownedPartyIds,
+		ownedAccountIds,
+		ownedCardIds,
+	] = await Promise.all([
+		fetchOwnedPayerIds(userId, payerIds),
+		fetchOwnedCategoryIds(userId, [fields.categoryId]),
+		fetchOwnedPartyIds(userId, [fields.partyId]),
+		fetchOwnedAccountIds(userId, [fields.accountId]),
+		fetchOwnedCardIds(userId, [fields.cardId]),
+	]);
 
 	const checks = [
 		!fields.payerId || ownedPayerIds.has(fields.payerId),
 		!fields.secondaryPayerId || ownedPayerIds.has(fields.secondaryPayerId),
 		(fields.splitPayerIds ?? []).every((id) => !id || ownedPayerIds.has(id)),
 		!fields.categoryId || ownedCategoryIds.has(fields.categoryId),
+		!fields.partyId || ownedPartyIds.has(fields.partyId),
 		!fields.accountId || ownedAccountIds.has(fields.accountId),
 		!fields.cardId || ownedCardIds.has(fields.cardId),
 	];
@@ -175,6 +205,7 @@ export async function validateAllOwnership(
 		"Pessoa secundária não encontrada ou sem permissão.",
 		"Uma das pessoas selecionadas não foi encontrada ou está sem permissão.",
 		"Categoria não encontrada.",
+		"Cliente/fornecedor não encontrado.",
 		"Conta não encontrada.",
 		"Cartão não encontrado.",
 	];
@@ -316,6 +347,7 @@ const baseFields = z.object({
 		message: "Selecione uma forma de pagamento válida.",
 	}),
 	payerId: uuidSchema("Payer").nullable().optional(),
+	partyId: uuidSchema("Cliente/Fornecedor").nullable().optional(),
 	secondaryPayerId: uuidSchema("Payer secundário").optional(),
 	splitShares: z
 		.array(
@@ -564,6 +596,80 @@ type InitialCandidate = {
 	paymentMethod: string | null;
 };
 
+export const normalizePartyIdForTransaction = (data: {
+	categoryPartyKind?: string | null;
+	partyId?: string | null;
+}) =>
+	normalizeCategoryPartyKind(data.categoryPartyKind)
+		? (data.partyId ?? null)
+		: null;
+
+export async function resolveCategoryPartyKind(
+	userId: string,
+	categoryId: string | null | undefined,
+): Promise<string | null> {
+	if (!categoryId) {
+		return null;
+	}
+
+	const category = await db.query.categories.findFirst({
+		columns: { partyKind: true },
+		where: and(eq(categories.id, categoryId), eq(categories.userId, userId)),
+	});
+
+	return normalizeCategoryPartyKind(category?.partyKind);
+}
+
+export const PARTY_KIND_MISMATCH_ERROR =
+	"O cliente/fornecedor selecionado não é compatível com a categoria.";
+
+export async function resolvePartyForTransaction(
+	userId: string,
+	data: {
+		transactionType: string;
+		categoryId?: string | null;
+		partyId?: string | null;
+	},
+): Promise<
+	| { ok: true; partyId: string | null; categoryPartyKind: string | null }
+	| { ok: false; error: string }
+> {
+	const category = data.categoryId
+		? await db.query.categories.findFirst({
+				columns: { id: true, partyKind: true },
+				where: and(
+					eq(categories.id, data.categoryId),
+					eq(categories.userId, userId),
+				),
+			})
+		: null;
+	const categoryPartyKind = normalizeCategoryPartyKind(category?.partyKind);
+	const partyId = normalizePartyIdForTransaction({
+		partyId: data.partyId,
+		categoryPartyKind,
+	});
+
+	if (data.partyId && !categoryPartyKind) {
+		return { ok: false, error: PARTY_KIND_MISMATCH_ERROR };
+	}
+
+	if (data.partyId) {
+		const party = await db.query.parties.findFirst({
+			columns: { id: true, kind: true },
+			where: and(eq(parties.id, data.partyId), eq(parties.userId, userId)),
+		});
+
+		if (
+			!party ||
+			!canCategoryLinkParty({ partyKind: categoryPartyKind }, party)
+		) {
+			return { ok: false, error: PARTY_KIND_MISMATCH_ERROR };
+		}
+	}
+
+	return { ok: true, partyId, categoryPartyKind };
+}
+
 export const isInitialBalanceTransaction = (record?: InitialCandidate | null) =>
 	!!record &&
 	record.note === INITIAL_BALANCE_NOTE &&
@@ -688,6 +794,7 @@ type BuildTransactionRecordsParams = {
 	amountSign: 1 | -1;
 	shouldNullifySettled: boolean;
 	seriesId: string | null;
+	categoryPartyKind: string | null;
 };
 
 export type TransactionInsert = typeof transactions.$inferInsert;
@@ -703,6 +810,7 @@ export const buildTransactionRecords = ({
 	amountSign,
 	shouldNullifySettled,
 	seriesId,
+	categoryPartyKind,
 }: BuildTransactionRecordsParams): TransactionInsert[] => {
 	const records: TransactionInsert[] = [];
 	const isSplit = (data.isSplit ?? false) && shares.length > 1;
@@ -716,6 +824,10 @@ export const buildTransactionRecords = ({
 		accountId: data.accountId ?? null,
 		cardId: data.cardId ?? null,
 		categoryId: data.categoryId ?? null,
+		partyId: normalizePartyIdForTransaction({
+			partyId: data.partyId,
+			categoryPartyKind,
+		}),
 		recurrenceCount: null as number | null,
 		installmentCount: null as number | null,
 		currentInstallment: null as number | null,
@@ -908,6 +1020,7 @@ export const updateBulkSchema = z.object({
 		.trim()
 		.min(1, "Informe o estabelecimento."),
 	categoryId: uuidSchema("Category").nullable().optional(),
+	partyId: uuidSchema("Cliente/Fornecedor").nullable().optional(),
 	note: noteSchema,
 	payerId: uuidSchema("Payer").nullable().optional(),
 	accountId: uuidSchema("FinancialAccount").nullable().optional(),

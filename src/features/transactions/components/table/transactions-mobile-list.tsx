@@ -12,7 +12,10 @@ import {
 } from "@remixicon/react";
 import Image from "next/image";
 import type { ReactNode } from "react";
-import { EstablishmentLogo } from "@/shared/components/entity-avatar";
+import {
+	ClientAvatarLabel,
+	EstablishmentLogo,
+} from "@/shared/components/entity-avatar";
 import MoneyValues from "@/shared/components/money-values";
 import { Badge } from "@/shared/components/ui/badge";
 import {
@@ -126,6 +129,7 @@ function TransactionMobileCard({
 	const isIncomingTransfer = isTransfer && Number(item.amount) > 0;
 	const payerLabel = item.pagadorName?.trim() || "Sem pessoa";
 	const payerDisplayName = payerLabel.split(/\s+/)[0] ?? payerLabel;
+	const partyLabel = item.partyName?.trim() || null;
 	const paymentMethodLabel =
 		item.paymentMethod === "Transferência bancária"
 			? "Transf. bancária"
@@ -166,6 +170,12 @@ function TransactionMobileCard({
 									</span>
 								) : null}
 								<span className="truncate">{payerDisplayName}</span>
+								{partyLabel ? (
+									<span className="inline-flex min-w-0 items-center gap-1.5">
+										<span className="shrink-0">Cliente/Fornecedor:</span>
+										<ClientAvatarLabel name={partyLabel} size="sm" />
+									</span>
+								) : null}
 							</div>
 						</div>
 						<div className="shrink-0 text-right">

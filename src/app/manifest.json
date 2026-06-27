@@ -1,6 +1,7 @@
 {
 	"name": "OpenMonetis",
 	"short_name": "OpenMonetis",
+	"description": "Fork nao oficial do OpenMonetis para controle financeiro simples de pequenas empresas.",
 	"icons": [
 		{
 			"src": "/images/web-app-manifest-192x192.png",

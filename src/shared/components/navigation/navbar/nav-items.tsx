@@ -6,6 +6,7 @@ import {
 	RiBankLine,
 	RiBarChart2Line,
 	RiCalendarEventLine,
+	RiContactsBookLine,
 	RiFileChartLine,
 	RiGroupLine,
 	RiPriceTag3Line,
@@ -114,6 +115,13 @@ export const NAV_SECTIONS: NavSection[] = [
 				label: "Categorias",
 				description: "Agrupe seus lançamentos",
 				icon: <RiPriceTag3Line className="size-4" />,
+				iconClass: "text-primary",
+			},
+			{
+				href: "/parties",
+				label: "Clientes/fornecedores",
+				description: "Vínculos por categoria",
+				icon: <RiContactsBookLine className="size-4" />,
 				iconClass: "text-primary",
 			},
 			{

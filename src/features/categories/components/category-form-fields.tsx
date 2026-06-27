@@ -16,6 +16,11 @@ import {
 	CATEGORY_TYPES,
 } from "@/shared/lib/categories/constants";
 import { getCategoryIconOptions } from "@/shared/lib/categories/icons";
+import {
+	CATEGORY_PARTY_KIND_LABEL,
+	CATEGORY_PARTY_KINDS,
+	type CategoryPartyKind,
+} from "@/shared/lib/categories/party-kind";
 import { cn } from "@/shared/utils/ui";
 
 import { CategoryIcon } from "./category-icon";
@@ -25,9 +30,13 @@ import type { CategoryFormValues } from "./types";
 
 interface CategoryFormFieldsProps {
 	values: CategoryFormValues;
-	onChange: (field: keyof CategoryFormValues, value: string) => void;
+	onChange: <Key extends keyof CategoryFormValues>(
+		field: Key,
+		value: CategoryFormValues[Key],
+	) => void;
 }
 
+const NO_PARTY_KIND_VALUE = "__none";
 const iconOptions = getCategoryIconOptions();
 
 export function CategoryFormFields({
@@ -54,10 +63,39 @@ export function CategoryFormFields({
 			</div>
 
 			<div className="flex flex-col gap-2">
+				<Label htmlFor="category-party-kind">Vínculo no lançamento</Label>
+				<Select
+					value={values.partyKind ?? NO_PARTY_KIND_VALUE}
+					onValueChange={(value) =>
+						onChange(
+							"partyKind",
+							value === NO_PARTY_KIND_VALUE
+								? null
+								: (value as CategoryPartyKind),
+						)
+					}
+				>
+					<SelectTrigger id="category-party-kind" className="w-full">
+						<SelectValue placeholder="Selecione o vínculo" />
+					</SelectTrigger>
+					<SelectContent>
+						<SelectItem value={NO_PARTY_KIND_VALUE}>Nenhum</SelectItem>
+						{CATEGORY_PARTY_KINDS.map((kind) => (
+							<SelectItem key={kind} value={kind}>
+								{CATEGORY_PARTY_KIND_LABEL[kind]}
+							</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
+			</div>
+
+			<div className="flex flex-col gap-2">
 				<Label htmlFor="category-type">Tipo da categoria</Label>
 				<Select
 					value={values.type}
-					onValueChange={(value) => onChange("type", value)}
+					onValueChange={(value) =>
+						onChange("type", value as CategoryFormValues["type"])
+					}
 				>
 					<SelectTrigger id="category-type" className="w-full">
 						<SelectValue placeholder="Selecione o tipo">

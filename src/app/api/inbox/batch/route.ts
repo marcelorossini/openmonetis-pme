@@ -1,10 +1,11 @@
 import { and, eq, gt, isNull } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { apiTokens, inboxItems } from "@/db/schema";
+import { apiTokens } from "@/db/schema";
 import { extractBearerToken, hashToken } from "@/shared/lib/auth/api-token";
 import { db } from "@/shared/lib/db";
 import { inboxBatchSchema } from "@/shared/lib/schemas/inbox";
+import { processInboxApiItem } from "../processing";
 
 // Rate limiting simples em memória
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
@@ -32,6 +33,10 @@ interface BatchResult {
 	clientId?: string;
 	serverId?: string;
 	success: boolean;
+	status?: "pending" | "processed";
+	autoImported?: boolean;
+	transactionId?: string;
+	autoImportError?: string;
 	error?: string;
 }
 
@@ -86,23 +91,12 @@ export async function POST(request: Request) {
 		const body = await request.json();
 		const { items } = inboxBatchSchema.parse(body);
 
-		// lançar todos os itens em paralelo
 		const settled = await Promise.allSettled(
 			items.map((item) =>
-				db
-					.insert(inboxItems)
-					.values({
-						userId: tokenRecord.userId,
-						sourceApp: item.sourceApp,
-						sourceAppName: item.sourceAppName,
-						originalTitle: item.originalTitle,
-						originalText: item.originalText,
-						notificationTimestamp: item.notificationTimestamp,
-						parsedName: item.parsedName,
-						parsedAmount: item.parsedAmount?.toString(),
-						status: "pending",
-					})
-					.returning({ id: inboxItems.id }),
+				processInboxApiItem({
+					userId: tokenRecord.userId,
+					data: item,
+				}),
 			),
 		);
 
@@ -110,9 +104,7 @@ export async function POST(request: Request) {
 			const item = items[i];
 			if (result.status === "fulfilled") {
 				return {
-					clientId: item?.clientId,
-					serverId: result.value[0]?.id,
-					success: true,
+					...result.value,
 				};
 			}
 			console.error("[API] Error processing batch item:", result.reason);

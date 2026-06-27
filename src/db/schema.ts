@@ -176,6 +176,27 @@ export const userPreferences = pgTable("preferencias_usuario", {
 		.default(sql`now()`),
 });
 
+export const appBrandingSettings = pgTable("app_branding_settings", {
+	id: text("id").primaryKey().default("global"),
+	primaryColorHex: text("primary_color_hex"),
+	logoContentBase64: text("logo_content_base64"),
+	logoFileName: text("logo_file_name"),
+	logoMimeType: text("logo_mime_type"),
+	logoFileSize: integer("logo_file_size"),
+	createdAt: timestamp("created_at", {
+		mode: "date",
+		withTimezone: true,
+	})
+		.notNull()
+		.default(sql`now()`),
+	updatedAt: timestamp("updated_at", {
+		mode: "date",
+		withTimezone: true,
+	})
+		.notNull()
+		.default(sql`now()`),
+});
+
 // ===================== PUBLIC TABLES =====================
 
 export const financialAccounts = pgTable("contas", {
@@ -210,6 +231,7 @@ export const categories = pgTable(
 		name: text("nome").notNull(),
 		type: text("tipo").notNull(),
 		icon: text("icone"),
+		partyKind: text("tipo_vinculo"),
 		createdAt: timestamp("created_at", {
 			mode: "date",
 			withTimezone: true,
@@ -257,6 +279,36 @@ export const payers = pgTable(
 	(table) => ({
 		uniqueShareCode: uniqueIndex("pagadores_share_code_key").on(
 			table.shareCode,
+		),
+	}),
+);
+
+export const parties = pgTable(
+	"clientes_fornecedores",
+	{
+		id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+		kind: text("tipo").notNull(),
+		name: text("nome").notNull(),
+		document: text("documento"),
+		email: text("email"),
+		phone: text("telefone"),
+		note: text("anotacao"),
+		status: text("status").notNull(),
+		createdAt: timestamp("created_at", {
+			mode: "date",
+			withTimezone: true,
+		})
+			.notNull()
+			.defaultNow(),
+		userId: text("user_id")
+			.notNull()
+			.references(() => user.id, { onDelete: "cascade" }),
+	},
+	(table) => ({
+		userIdKindStatusIdx: index("clientes_fornecedores_user_tipo_status_idx").on(
+			table.userId,
+			table.kind,
+			table.status,
 		),
 	}),
 );
@@ -489,6 +541,7 @@ export const inboxItems = pgTable(
 		// Informações da fonte
 		sourceApp: text("source_app").notNull(), // Ex: "com.nu.production"
 		sourceAppName: text("source_app_name"), // Ex: "Nubank"
+		profileKey: text("profile_key"),
 
 		// Dados originais da notificação
 		originalTitle: text("original_title"),
@@ -501,6 +554,36 @@ export const inboxItems = pgTable(
 		// Dados parseados (editáveis pelo usuário antes de lançar)
 		parsedName: text("parsed_name"), // Nome do estabelecimento
 		parsedAmount: numeric("parsed_amount", { precision: 12, scale: 2 }),
+		purchaseDate: date("data_compra", { mode: "date" }),
+		transactionType: text("tipo_transacao"),
+		paymentMethod: text("forma_pagamento"),
+		accountId: uuid("conta_id").references(() => financialAccounts.id, {
+			onDelete: "set null",
+			onUpdate: "cascade",
+		}),
+		accountExternalKey: text("account_external_key"),
+		cardId: uuid("cartao_id").references(() => cards.id, {
+			onDelete: "set null",
+			onUpdate: "cascade",
+		}),
+		categoryId: uuid("categoria_id").references(() => categories.id, {
+			onDelete: "set null",
+			onUpdate: "cascade",
+		}),
+		categoryExternalKey: text("category_external_key"),
+		payerId: uuid("pagador_id").references(() => payers.id, {
+			onDelete: "set null",
+			onUpdate: "cascade",
+		}),
+		partyId: uuid("cliente_fornecedor_id").references(() => parties.id, {
+			onDelete: "set null",
+			onUpdate: "cascade",
+		}),
+		partyExternalKey: text("party_external_key"),
+		autoImportRequested: boolean("auto_import_requested")
+			.notNull()
+			.default(false),
+		autoImportError: text("auto_import_error"),
 
 		// Status de processamento
 		status: text("status").notNull().default("pending"), // pending, processed, discarded
@@ -672,6 +755,10 @@ export const transactions = pgTable(
 			onDelete: "cascade",
 			onUpdate: "cascade",
 		}),
+		partyId: uuid("cliente_fornecedor_id").references(() => parties.id, {
+			onDelete: "set null",
+			onUpdate: "cascade",
+		}),
 		seriesId: uuid("series_id"),
 		splitGroupId: uuid("split_group_id"),
 		transferId: uuid("transfer_id"),
@@ -726,6 +813,9 @@ export const transactions = pgTable(
 		// FK indexes: evitam seq scan em deletes/updates nas tabelas pai
 		accountIdIdx: index("lancamentos_conta_id_idx").on(table.accountId),
 		categoryIdIdx: index("lancamentos_categoria_id_idx").on(table.categoryId),
+		partyIdIdx: index("lancamentos_cliente_fornecedor_id_idx").on(
+			table.partyId,
+		),
 		anticipationIdIdx: index("lancamentos_antecipacao_id_idx").on(
 			table.anticipationId,
 		),
@@ -747,6 +837,7 @@ export const userRelations = relations(user, ({ many, one }) => ({
 	transactions: many(transactions),
 	budgets: many(budgets),
 	payers: many(payers),
+	parties: many(parties),
 	installmentAnticipations: many(installmentAnticipations),
 	apiTokens: many(apiTokens),
 	inboxItems: many(inboxItems),
@@ -795,6 +886,14 @@ export const payersRelations = relations(payers, ({ one, many }) => ({
 	}),
 	transactions: many(transactions),
 	shares: many(payerShares),
+}));
+
+export const partiesRelations = relations(parties, ({ one, many }) => ({
+	user: one(user, {
+		fields: [parties.userId],
+		references: [user.id],
+	}),
+	transactions: many(transactions),
 }));
 
 export const payerSharesRelations = relations(payerShares, ({ one }) => ({
@@ -902,6 +1001,10 @@ export const transactionsRelations = relations(
 		payer: one(payers, {
 			fields: [transactions.payerId],
 			references: [payers.id],
+		}),
+		party: one(parties, {
+			fields: [transactions.partyId],
+			references: [parties.id],
 		}),
 		anticipation: one(installmentAnticipations, {
 			fields: [transactions.anticipationId],
@@ -1013,6 +1116,108 @@ export const importCategoryMappings = pgTable(
 	}),
 );
 
+export const integrationPartyMappings = pgTable(
+	"integration_party_mappings",
+	{
+		userId: text("user_id")
+			.notNull()
+			.references(() => user.id, { onDelete: "cascade" }),
+		sourceApp: text("source_app").notNull(),
+		profileKey: text("profile_key").notNull().default(""),
+		externalKey: text("external_key").notNull(),
+		partyId: uuid("party_id")
+			.notNull()
+			.references(() => parties.id, { onDelete: "cascade" }),
+		createdAt: timestamp("created_at", { mode: "date", withTimezone: true })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp("updated_at", { mode: "date", withTimezone: true })
+			.notNull()
+			.defaultNow(),
+	},
+	(table) => ({
+		pk: primaryKey({
+			columns: [
+				table.userId,
+				table.sourceApp,
+				table.profileKey,
+				table.externalKey,
+			],
+		}),
+		partyIdIdx: index("integration_party_mappings_party_id_idx").on(
+			table.partyId,
+		),
+	}),
+);
+
+export const integrationAccountMappings = pgTable(
+	"integration_account_mappings",
+	{
+		userId: text("user_id")
+			.notNull()
+			.references(() => user.id, { onDelete: "cascade" }),
+		sourceApp: text("source_app").notNull(),
+		profileKey: text("profile_key").notNull().default(""),
+		externalKey: text("external_key").notNull(),
+		accountId: uuid("account_id")
+			.notNull()
+			.references(() => financialAccounts.id, { onDelete: "cascade" }),
+		createdAt: timestamp("created_at", { mode: "date", withTimezone: true })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp("updated_at", { mode: "date", withTimezone: true })
+			.notNull()
+			.defaultNow(),
+	},
+	(table) => ({
+		pk: primaryKey({
+			columns: [
+				table.userId,
+				table.sourceApp,
+				table.profileKey,
+				table.externalKey,
+			],
+		}),
+		accountIdIdx: index("integration_account_mappings_account_id_idx").on(
+			table.accountId,
+		),
+	}),
+);
+
+export const integrationCategoryMappings = pgTable(
+	"integration_category_mappings",
+	{
+		userId: text("user_id")
+			.notNull()
+			.references(() => user.id, { onDelete: "cascade" }),
+		sourceApp: text("source_app").notNull(),
+		profileKey: text("profile_key").notNull().default(""),
+		externalKey: text("external_key").notNull(),
+		categoryId: uuid("category_id")
+			.notNull()
+			.references(() => categories.id, { onDelete: "cascade" }),
+		createdAt: timestamp("created_at", { mode: "date", withTimezone: true })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp("updated_at", { mode: "date", withTimezone: true })
+			.notNull()
+			.defaultNow(),
+	},
+	(table) => ({
+		pk: primaryKey({
+			columns: [
+				table.userId,
+				table.sourceApp,
+				table.profileKey,
+				table.externalKey,
+			],
+		}),
+		categoryIdIdx: index("integration_category_mappings_category_id_idx").on(
+			table.categoryId,
+		),
+	}),
+);
+
 export const establishmentLogos = pgTable(
 	"establishment_logos",
 	{
@@ -1039,6 +1244,7 @@ export type Session = typeof session.$inferSelect;
 export type Verification = typeof verification.$inferSelect;
 export type UserPreferences = typeof userPreferences.$inferSelect;
 export type NewUserPreferences = typeof userPreferences.$inferInsert;
+export type AppBrandingSettings = typeof appBrandingSettings.$inferSelect;
 export type PayerShare = typeof payerShares.$inferSelect;
 export type FinancialAccount = typeof financialAccounts.$inferSelect;
 export type Category = typeof categories.$inferSelect;
@@ -1056,6 +1262,12 @@ export type NewApiToken = typeof apiTokens.$inferInsert;
 export type InboxItem = typeof inboxItems.$inferSelect;
 export type NewInboxItem = typeof inboxItems.$inferInsert;
 export type ImportCategoryMapping = typeof importCategoryMappings.$inferSelect;
+export type IntegrationAccountMapping =
+	typeof integrationAccountMappings.$inferSelect;
+export type IntegrationPartyMapping =
+	typeof integrationPartyMappings.$inferSelect;
+export type IntegrationCategoryMapping =
+	typeof integrationCategoryMappings.$inferSelect;
 
 export const attachmentsRelations = relations(attachments, ({ one, many }) => ({
 	user: one(user, {

@@ -34,6 +34,7 @@ import {
 	isInitialBalanceTransaction,
 	type MassAddInput,
 	massAddSchema,
+	resolvePartyForTransaction,
 	resolvePeriod,
 	resolveUserLabel,
 	revalidate,
@@ -174,16 +175,6 @@ export async function updateTransactionBulkAction(
 		const user = await getUser();
 		const data = updateBulkSchema.parse(input);
 
-		const ownershipError = await validateAllOwnership(user.id, {
-			payerId: data.payerId,
-			categoryId: data.categoryId,
-			accountId: data.accountId,
-			cardId: data.cardId,
-		});
-		if (ownershipError) {
-			return { success: false, error: ownershipError };
-		}
-
 		const existing = await db.query.transactions.findFirst({
 			columns: {
 				id: true,
@@ -222,9 +213,30 @@ export async function updateTransactionBulkAction(
 			};
 		}
 
+		const party = await resolvePartyForTransaction(user.id, {
+			transactionType: existing.transactionType,
+			categoryId: data.categoryId,
+			partyId: data.partyId,
+		});
+		if (!party.ok) {
+			return { success: false, error: party.error };
+		}
+
+		const ownershipError = await validateAllOwnership(user.id, {
+			payerId: data.payerId,
+			categoryId: data.categoryId,
+			partyId: party.partyId,
+			accountId: data.accountId,
+			cardId: data.cardId,
+		});
+		if (ownershipError) {
+			return { success: false, error: ownershipError };
+		}
+
 		const baseUpdatePayload: Record<string, unknown> = {
 			name: data.name,
 			categoryId: data.categoryId ?? null,
+			partyId: party.partyId,
 			note: data.note ?? null,
 			// "period" atualiza todos os pagadores do mês — preserva o payerId de cada linha
 			...(data.scope !== "period" && { payerId: data.payerId ?? null }),

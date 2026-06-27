@@ -100,7 +100,7 @@ type AccountDeleteInput = z.infer<typeof deleteAccountSchema>;
 
 export async function createAccountAction(
 	input: AccountCreateInput,
-): Promise<ActionResult> {
+): Promise<ActionResult<{ id: string }>> {
 	try {
 		const user = await getUser();
 		const data = createAccountSchema.parse(input);
@@ -118,6 +118,8 @@ export async function createAccountAction(
 				"Pessoa com papel administrador não encontrada. Crie uma pessoa admin antes de definir um saldo inicial.",
 			);
 		}
+
+		let createdAccountId: string | null = null;
 
 		await db.transaction(async (tx: typeof db) => {
 			const [createdAccount] = await tx
@@ -138,6 +140,8 @@ export async function createAccountAction(
 			if (!createdAccount) {
 				throw new Error("Não foi possível criar a conta.");
 			}
+
+			createdAccountId = createdAccount.id;
 
 			if (!hasInitialBalance) {
 				return;
@@ -183,9 +187,10 @@ export async function createAccountAction(
 		return {
 			success: true,
 			message: "Conta criada com sucesso.",
+			data: createdAccountId ? { id: createdAccountId } : undefined,
 		};
 	} catch (error) {
-		return handleActionError(error);
+		return handleActionError(error) as ActionResult<{ id: string }>;
 	}
 }
 

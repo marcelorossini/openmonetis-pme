@@ -218,6 +218,62 @@
 			"when": 1782051007412,
 			"tag": "0031_lame_cerise",
 			"breakpoints": true
+		},
+		{
+			"idx": 32,
+			"version": "7",
+			"when": 1782444014459,
+			"tag": "0032_glossy_bromley",
+			"breakpoints": true
+		},
+		{
+			"idx": 33,
+			"version": "7",
+			"when": 1782470904718,
+			"tag": "0033_rename_freelance_category",
+			"breakpoints": true
+		},
+		{
+			"idx": 34,
+			"version": "7",
+			"when": 1782481177699,
+			"tag": "0034_loving_wendell_rand",
+			"breakpoints": true
+		},
+		{
+			"idx": 35,
+			"version": "7",
+			"when": 1782485000000,
+			"tag": "0035_create_establishment_logos",
+			"breakpoints": true
+		},
+		{
+			"idx": 36,
+			"version": "7",
+			"when": 1782487000000,
+			"tag": "0036_migrate_clients_to_parties",
+			"breakpoints": true
+		},
+		{
+			"idx": 37,
+			"version": "7",
+			"when": 1782490000000,
+			"tag": "0037_expand_inbox_auto_import",
+			"breakpoints": true
+		},
+		{
+			"idx": 38,
+			"version": "7",
+			"when": 1782494000000,
+			"tag": "0038_create_integration_mappings",
+			"breakpoints": true
+		},
+		{
+			"idx": 39,
+			"version": "7",
+			"when": 1782502000000,
+			"tag": "0039_add_account_integration_mappings",
+			"breakpoints": true
 		}
 	]
 }

@@ -1,5 +1,6 @@
 {
 	"name": "openmonetis",
+	"description": "OpenMonetis PME e um fork nao oficial do OpenMonetis, adaptado para controle financeiro simples de pequenas empresas, com foco em contas a pagar, contas a receber, clientes, fornecedores e fluxo de caixa. Creditos ao autor original Felipe Coutinho (@felipegcoutinho).",
 	"version": "2.7.9",
 	"private": true,
 	"packageManager": "pnpm@11.1.3",

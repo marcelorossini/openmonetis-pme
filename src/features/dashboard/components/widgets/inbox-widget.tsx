@@ -286,6 +286,7 @@ export function InboxWidget({
 				payerOptions={quickActionOptions.payerOptions}
 				splitPayerOptions={quickActionOptions.splitPayerOptions}
 				defaultPayerId={quickActionOptions.defaultPayerId}
+				partyOptions={quickActionOptions.partyOptions}
 				accountOptions={quickActionOptions.accountOptions}
 				cardOptions={quickActionOptions.cardOptions}
 				categoryOptions={quickActionOptions.categoryOptions}

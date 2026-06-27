@@ -59,6 +59,11 @@ export function InboxDetailsDialog({
 											{item.sourceApp}
 										</span>
 									)}
+									{item.profileKey && (
+										<span className="font-mono text-xs text-muted-foreground">
+											Perfil: {item.profileKey}
+										</span>
+									)}
 								</div>
 							</div>
 						</div>
@@ -92,6 +97,74 @@ export function InboxDetailsDialog({
 									<span className="text-muted-foreground">Não extraído</span>
 								)}
 							</div>
+							{item.purchaseDate && (
+								<div className="flex justify-between">
+									<span className="text-muted-foreground">Data da compra</span>
+									<span>
+										{format(new Date(item.purchaseDate), "dd/MM/yyyy", {
+											locale: ptBR,
+										})}
+									</span>
+								</div>
+							)}
+							{item.transactionType && (
+								<div className="flex justify-between">
+									<span className="text-muted-foreground">Tipo</span>
+									<span>{item.transactionType}</span>
+								</div>
+							)}
+							{item.paymentMethod && (
+								<div className="flex justify-between">
+									<span className="text-muted-foreground">
+										Forma de pagamento
+									</span>
+									<span>{item.paymentMethod}</span>
+								</div>
+							)}
+							{item.accountExternalKey && (
+								<div className="flex justify-between gap-4">
+									<span className="text-muted-foreground">
+										Valor externo conta
+									</span>
+									<span className="break-all text-right">
+										{item.accountExternalKey}
+									</span>
+								</div>
+							)}
+							{item.partyExternalKey && (
+								<div className="flex justify-between gap-4">
+									<span className="text-muted-foreground">
+										Valor externo cliente/fornecedor
+									</span>
+									<span className="break-all text-right">
+										{item.partyExternalKey}
+									</span>
+								</div>
+							)}
+							{item.categoryExternalKey && (
+								<div className="flex justify-between gap-4">
+									<span className="text-muted-foreground">
+										Valor externo categoria
+									</span>
+									<span className="break-all text-right">
+										{item.categoryExternalKey}
+									</span>
+								</div>
+							)}
+							{item.autoImportRequested && (
+								<div className="flex justify-between">
+									<span className="text-muted-foreground">Autoimportação</span>
+									<span>
+										{item.status === "processed" ? "Concluída" : "Pendente"}
+									</span>
+								</div>
+							)}
+							{item.autoImportError && (
+								<div className="rounded-md border border-warning/30 bg-warning/10 p-2 text-sm">
+									<span className="font-medium">Motivo: </span>
+									{item.autoImportError}
+								</div>
+							)}
 						</div>
 					</div>
 

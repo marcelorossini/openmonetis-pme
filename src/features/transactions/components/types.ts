@@ -12,6 +12,9 @@ export type TransactionItem = {
 	pagadorName: string | null;
 	pagadorAvatar: string | null;
 	pagadorRole: string | null;
+	partyId: string | null;
+	partyName: string | null;
+	partyKind: string | null;
 	accountId: string | null;
 	contaName: string | null;
 	contaLogo: string | null;
@@ -50,6 +53,7 @@ export type SelectOption = {
 	accountType?: string | null;
 	closingDay?: string | null;
 	dueDay?: string | null;
+	partyKind?: string | null;
 };
 
 export type TransactionFilterOption = {

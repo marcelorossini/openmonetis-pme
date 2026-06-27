@@ -45,6 +45,7 @@ interface InboxPageProps {
 	payerOptions: SelectOption[];
 	splitPayerOptions: SelectOption[];
 	defaultPayerId: string | null;
+	partyOptions: SelectOption[];
 	accountOptions: SelectOption[];
 	cardOptions: SelectOption[];
 	categoryOptions: SelectOption[];
@@ -62,6 +63,7 @@ export function InboxPage({
 	payerOptions,
 	splitPayerOptions,
 	defaultPayerId,
+	partyOptions,
 	accountOptions,
 	cardOptions,
 	categoryOptions,
@@ -366,7 +368,9 @@ export function InboxPage({
 	};
 
 	const defaultPurchaseDate =
-		getDateString(itemToProcess?.notificationTimestamp) ?? null;
+		getDateString(itemToProcess?.purchaseDate) ??
+		getDateString(itemToProcess?.notificationTimestamp) ??
+		null;
 	const defaultName = itemToProcess?.parsedName
 		? itemToProcess.parsedName
 				.toLowerCase()
@@ -386,6 +390,13 @@ export function InboxPage({
 		}
 		return null;
 	}, [itemToProcess?.sourceAppName, cardOptions]);
+	const defaultCardId = itemToProcess?.cardId ?? matchedCartaoId;
+	const defaultPaymentMethod =
+		itemToProcess?.paymentMethod ??
+		(defaultCardId ? "Cartão de crédito" : null);
+	const defaultDialogPayerId = itemToProcess?.payerId ?? defaultPayerId;
+	const defaultTransactionType =
+		itemToProcess?.transactionType === "Receita" ? "Receita" : "Despesa";
 
 	const showTabActions = (status: InboxStatus) =>
 		activeStatus === status &&
@@ -505,7 +516,7 @@ export function InboxPage({
 				onOpenChange={handleProcessOpenChange}
 				payerOptions={payerOptions}
 				splitPayerOptions={splitPayerOptions}
-				defaultPayerId={defaultPayerId}
+				partyOptions={partyOptions}
 				accountOptions={accountOptions}
 				cardOptions={cardOptions}
 				categoryOptions={categoryOptions}
@@ -513,9 +524,13 @@ export function InboxPage({
 				defaultPurchaseDate={defaultPurchaseDate}
 				defaultName={defaultName}
 				defaultAmount={defaultAmount}
-				defaultCardId={matchedCartaoId}
-				defaultPaymentMethod={matchedCartaoId ? "Cartão de crédito" : null}
-				defaultTransactionType="Despesa"
+				defaultAccountId={itemToProcess?.accountId ?? null}
+				defaultCardId={defaultCardId}
+				defaultCategoryId={itemToProcess?.categoryId ?? null}
+				defaultPartyId={itemToProcess?.partyId ?? null}
+				defaultPaymentMethod={defaultPaymentMethod}
+				defaultTransactionType={defaultTransactionType}
+				defaultPayerId={defaultDialogPayerId}
 				forceShowTransactionType
 				onSuccess={handleLancamentoSuccess}
 			/>

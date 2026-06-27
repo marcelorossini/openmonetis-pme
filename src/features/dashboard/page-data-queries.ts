@@ -14,6 +14,7 @@ type DashboardQuickActionOptions = {
 	payerOptions: ReturnType<typeof buildOptionSets>["payerOptions"];
 	splitPayerOptions: ReturnType<typeof buildOptionSets>["splitPayerOptions"];
 	defaultPayerId: string | null;
+	partyOptions: ReturnType<typeof buildOptionSets>["partyOptions"];
 	accountOptions: ReturnType<typeof buildOptionSets>["accountOptions"];
 	cardOptions: ReturnType<typeof buildOptionSets>["cardOptions"];
 	categoryOptions: ReturnType<typeof buildOptionSets>["categoryOptions"];
@@ -33,6 +34,7 @@ async function fetchDashboardQuickActionOptionsInternal(
 		payerOptions,
 		splitPayerOptions,
 		defaultPayerId,
+		partyOptions,
 		accountOptions,
 		cardOptions,
 		categoryOptions,
@@ -45,6 +47,7 @@ async function fetchDashboardQuickActionOptionsInternal(
 		payerOptions,
 		splitPayerOptions,
 		defaultPayerId,
+		partyOptions,
 		accountOptions,
 		cardOptions,
 		categoryOptions,

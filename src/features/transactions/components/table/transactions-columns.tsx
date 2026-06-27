@@ -10,6 +10,7 @@ import Link from "next/link";
 import { DEFAULT_TRANSACTIONS_COLUMN_ORDER } from "@/features/transactions/lib/column-order";
 import {
 	CategoryIconBadge,
+	ClientAvatarLabel,
 	EstablishmentLogo,
 } from "@/shared/components/entity-avatar";
 import MoneyValues from "@/shared/components/money-values";
@@ -38,6 +39,7 @@ import { TransactionSettlementButton } from "./transaction-settlement-button";
 type BuildColumnsArgs = {
 	currentUserId: string;
 	noteAsColumn: boolean;
+	showPartyColumn: boolean;
 	onEdit?: (item: TransactionItem) => void;
 	onCopy?: (item: TransactionItem) => void;
 	onImport?: (item: TransactionItem) => void;
@@ -102,6 +104,7 @@ function reorderColumnsByPreference<T>(
 function buildColumns({
 	currentUserId,
 	noteAsColumn,
+	showPartyColumn,
 	onEdit,
 	onCopy,
 	onImport,
@@ -383,19 +386,31 @@ function buildColumns({
 			accessorKey: "categoriaName",
 			header: "Categoria",
 			cell: ({ row }) => {
-				const { categoriaName, categoriaIcon } = row.original;
+				const { categoryId, categoriaName, categoriaIcon } = row.original;
 				if (!categoriaName) {
 					return <span className="text-muted-foreground">—</span>;
 				}
-				return (
+				const content = (
 					<span className="flex items-center gap-2">
 						<CategoryIconBadge
 							icon={categoriaIcon}
 							name={categoriaName}
 							size="sm"
 						/>
-						<span>{categoriaName}</span>
+						<span className="truncate">{categoriaName}</span>
 					</span>
+				);
+				if (!categoryId) {
+					return content;
+				}
+				return (
+					<Link
+						href={`/categories/${categoryId}`}
+						className="inline-flex max-w-full items-center gap-2 underline-offset-2 hover:underline"
+						title={categoriaName}
+					>
+						{content}
+					</Link>
 				);
 			},
 		},
@@ -505,6 +520,42 @@ function buildColumns({
 			},
 		},
 	];
+
+	if (showPartyColumn) {
+		const payerIndex = columns.findIndex(
+			(c) => getColumnId(c) === "pagadorName",
+		);
+		const partyColumn: ColumnDef<TransactionItem> = {
+			accessorKey: "partyName",
+			header: "Cliente/Fornecedor",
+			cell: ({ row }) => {
+				const { partyId, partyName } = row.original;
+				if (!partyName) {
+					return <span className="text-muted-foreground">—</span>;
+				}
+				const content = (
+					<ClientAvatarLabel
+						name={partyName}
+						size="md"
+						labelClassName="font-medium"
+					/>
+				);
+				if (!partyId) {
+					return content;
+				}
+				return (
+					<Link
+						href={`/parties?party=${encodeURIComponent(partyId)}`}
+						className="inline-flex max-w-full underline-offset-2 hover:underline"
+						title={partyName}
+					>
+						{content}
+					</Link>
+				);
+			},
+		};
+		columns.splice(payerIndex, 0, partyColumn);
+	}
 
 	if (noteAsColumn) {
 		const accountCardIndex = columns.findIndex((c) => c.id === "contaCartao");

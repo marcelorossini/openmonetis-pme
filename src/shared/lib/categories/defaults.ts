@@ -1,12 +1,14 @@
 import { eq } from "drizzle-orm";
 import { categories } from "@/db/schema";
 import type { CategoryType } from "@/shared/lib/categories/constants";
+import type { CategoryPartyKind } from "@/shared/lib/categories/party-kind";
 import { db } from "@/shared/lib/db";
 
 type DefaultCategory = {
 	name: string;
 	type: CategoryType;
 	icon: string | null;
+	partyKind?: CategoryPartyKind | null;
 };
 
 export const DEFAULT_CATEGORIES: DefaultCategory[] = [
@@ -33,7 +35,12 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
 
 	// Receitas
 	{ name: "Salário", type: "receita", icon: "RiWallet3Line" },
-	{ name: "Freelance", type: "receita", icon: "RiUserStarLine" },
+	{
+		name: "Serviços Prestados",
+		type: "receita",
+		icon: "RiUserStarLine",
+		partyKind: "cliente",
+	},
 	{ name: "Rendimentos", type: "receita", icon: "RiFundsLine" },
 	{ name: "Investimentos", type: "receita", icon: "RiStockLine" },
 	{ name: "Vendas", type: "receita", icon: "RiShoppingCartLine" },
@@ -78,6 +85,7 @@ export async function seedDefaultCategoriesForUser(userId: string | undefined) {
 			name: category.name,
 			type: category.type,
 			icon: category.icon,
+			partyKind: category.partyKind ?? null,
 			userId,
 		})),
 	);

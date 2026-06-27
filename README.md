@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  Projeto pessoal de gestão financeira. Self-hosted, manual e open source.
+  Fork não oficial do OpenMonetis para controle financeiro simples de pequenas empresas.
 </p>
 
 > **⚠️ Nota:** o OpenMonetis não está sendo encerrado, mas o desenvolvimento deve reduzir para quase zero daqui em diante. O app já cobre minhas demandas atuais de gerenciamento financeiro, então novas mudanças tendem a ser pontuais: correções, ajustes necessários e pequenas melhorias quando fizerem bastante sentido para meu uso.
@@ -49,6 +49,10 @@
 
 ## 🎯 Sobre o Projeto
 
+**OpenMonetis PME** é um fork não oficial do OpenMonetis, adaptado para controle financeiro simples de pequenas empresas, com foco em contas a pagar, contas a receber, clientes, fornecedores e fluxo de caixa.
+
+Todos os créditos pelo projeto original vão para **Felipe Coutinho** ([`@felipegcoutinho`](https://github.com/felipegcoutinho)).
+
 **OpenMonetis** é um projeto pessoal de gestão financeira que criei para organizar minhas próprias finanças. Cansei de usar planilhas desorganizadas e aplicativos que não fazem exatamente o que preciso, então decidi construir algo do jeito que funciona pra mim.
 
 A ideia é simples: ter um lugar onde consigo ver todas as minhas contas, cartões, gastos e receitas de forma clara. Se isso for útil pra você também, fique à vontade para usar e contribuir.
@@ -65,7 +69,7 @@ A ideia é simples: ter um lugar onde consigo ver todas as minhas contas, cartõ
 
 ### Funcionalidades
 
-💰 **Contas e transações** — Contas bancárias, cartões, dinheiro. Receitas, despesas, rendimentos e transferências. Categorização, divisão de lançamentos entre várias pessoas, filtros combináveis com intervalo de datas, extratos detalhados com identificação visual clara da conta e importação de extratos OFX e XLS/XLSX com detecção automática de categoria.
+💰 **Contas e transações** — Contas bancárias, cartões, dinheiro. Receitas, despesas, rendimentos e transferências. Categorização, divisão de lançamentos entre várias pessoas, vínculo opcional a clientes ou fornecedores conforme a categoria, filtros combináveis com intervalo de datas, extratos detalhados com identificação visual clara da conta e importação de extratos OFX e XLS/XLSX com detecção automática de categoria.
 
 📊 **Dashboard e relatórios** — Widgets personalizáveis com listas consistentes, métricas com atalhos para lançamentos, gráficos de evolução, comparativos por categoria, tendências, uso de cartões, top estabelecimentos e navegação direta entre meses pelo seletor de período. Exportação em PDF e Excel.
 
@@ -84,6 +88,15 @@ A ideia é simples: ter um lugar onde consigo ver todas as minhas contas, cartõ
 📅 **Calendário financeiro** — Visualize todos os lançamentos em um calendário mensal.
 
 📲 **OpenMonetis Companion** — App Android que captura notificações bancárias (Nubank, Itaú, Bradesco, Inter, C6 e outros) e envia automaticamente como pré-lançamentos para revisão — sem digitar nada. [Repositório](https://github.com/felipegcoutinho/openmonetis-companion).
+
+O endpoint do Companion também aceita dados canônicos para agilizar a revisão: data da compra, forma de pagamento, conta ou cartão, categoria, pessoa e cliente/fornecedor. Quando o payload envia `autoImport: true`, o OpenMonetis tenta criar o lançamento automaticamente; se faltar algum dado obrigatório, o item permanece na inbox para revisão.
+
+Em `Ajustes > Integrações`, valores externos recebidos pela API podem ser mapeados para contas, categorias e clientes/fornecedores locais por origem e perfil. Isso cobre casos como conta vinda por alias, `partyId` chegando como CNPJ ou aliases de categoria vindos de webhook, e reprocessa automaticamente os pré-lançamentos pendentes quando o mapeamento é salvo. Os próprios cadastros de conta, categoria e cliente/fornecedor também oferecem um atalho direto para abrir essa área já filtrada pela entidade.
+
+Para detalhes do fluxo, veja:
+
+- `docs/integrations/perfis-de-conversao.md`
+- `docs/integrations/mapeamentos-de-integracao.md`
 
 <p align="center">
   <img src="./public/images/companion-preview-light.webp" alt="OpenMonetis Companion" width="300" height="600" />
@@ -528,6 +541,13 @@ O OpenMonetis usa uma identidade visual própria com superfícies quentes, laran
 como cor de destaque, temas claro e escuro e tipografia Bricolage Grotesque. A
 interface é construída com tokens semânticos em OKLCH, Tailwind CSS 4 e
 componentes compartilhados baseados em shadcn/ui e Radix UI.
+
+Instâncias self-hosted também podem ajustar a marca global em
+**Ajustes > Personalização**. Essa tela permite enviar um logo próprio para as
+headers e definir a cor principal por seletor visual ou valor hexadecimal. A
+personalização vale para o app inteiro, salva o logo no PostgreSQL da instalação
+e mantém a identidade padrão do OpenMonetis como fallback. O logo personalizado
+não depende de S3; S3 continua sendo usado apenas para anexos.
 
 As regras de cores, tipografia, componentes, responsividade e acessibilidade
 estão documentadas no [`DESIGN.md`](DESIGN.md). Use esse guia como referência ao

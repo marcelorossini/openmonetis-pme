@@ -1,5 +1,7 @@
 "use client";
 
+import { RiLinkM } from "@remixicon/react";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 import {
@@ -23,6 +25,7 @@ import {
 } from "@/shared/components/ui/dialog";
 import { useControlledState } from "@/shared/hooks/use-controlled-state";
 import { useFormState } from "@/shared/hooks/use-form-state";
+import { buildIntegrationsSettingsHref } from "@/shared/lib/inbox-integrations/types";
 import { getLogoDisplayName, normalizeLogo } from "@/shared/lib/logo";
 import {
 	formatInitialBalanceInput,
@@ -89,6 +92,7 @@ export function AccountDialog({
 	open,
 	onOpenChange,
 }: AccountDialogProps) {
+	const router = useRouter();
 	const [logoDialogOpen, setLogoDialogOpen] = useState(false);
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 	const [isPending, startTransition] = useTransition();
@@ -197,7 +201,22 @@ export function AccountDialog({
 				const result = await createAccountAction(payload);
 
 				if (result.success) {
-					toast.success(result.message);
+					const createdId = result.data?.id;
+					toast.success(result.message, {
+						action: createdId
+							? {
+									label: "Integrações",
+									onClick: () =>
+										router.push(
+											buildIntegrationsSettingsHref({
+												entityType: "account",
+												entityId: createdId,
+												entityLabel: payload.name,
+											}),
+										),
+								}
+							: undefined,
+					});
 					setDialogOpen(false);
 					resetForm(initialState);
 					return;
@@ -235,6 +254,13 @@ export function AccountDialog({
 			? "Cadastre uma nova conta para organizar seus lançamentos."
 			: "Atualize as informações da conta selecionada.";
 	const submitLabel = mode === "create" ? "Salvar" : "Atualizar";
+	const integrationsHref = account
+		? buildIntegrationsSettingsHref({
+				entityType: "account",
+				entityId: account.id,
+				entityLabel: account.name,
+			})
+		: null;
 
 	const handleMainDialogOpenChange = (open: boolean) => {
 		if (!open && logoDialogOpen) {
@@ -295,6 +321,17 @@ export function AccountDialog({
 							>
 								Cancelar
 							</Button>
+							{mode === "update" && integrationsHref ? (
+								<Button
+									type="button"
+									variant="outline"
+									onClick={() => router.push(integrationsHref)}
+									disabled={isPending}
+								>
+									<RiLinkM className="size-4" />
+									Integrações
+								</Button>
+							) : null}
 							<Button type="submit" disabled={isPending}>
 								{isPending ? "Salvando..." : submitLabel}
 							</Button>

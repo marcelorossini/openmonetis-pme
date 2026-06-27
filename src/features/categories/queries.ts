@@ -1,6 +1,10 @@
 import { eq } from "drizzle-orm";
 import { type Category, categories } from "@/db/schema";
 import type { CategoryType } from "@/shared/lib/categories/constants";
+import {
+	type CategoryPartyKind,
+	normalizeCategoryPartyKind,
+} from "@/shared/lib/categories/party-kind";
 import { db } from "@/shared/lib/db";
 
 type CategoryData = {
@@ -8,6 +12,7 @@ type CategoryData = {
 	name: string;
 	type: CategoryType;
 	icon: string | null;
+	partyKind: CategoryPartyKind | null;
 };
 
 export async function fetchCategoriesForUser(
@@ -22,5 +27,6 @@ export async function fetchCategoriesForUser(
 		name: category.name,
 		type: category.type as CategoryType,
 		icon: category.icon,
+		partyKind: normalizeCategoryPartyKind(category.partyKind),
 	}));
 }

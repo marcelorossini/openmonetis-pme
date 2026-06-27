@@ -1,5 +1,7 @@
 "use client";
 
+import { RiLinkM } from "@remixicon/react";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 import {
@@ -20,6 +22,7 @@ import { useControlledState } from "@/shared/hooks/use-controlled-state";
 import { useFormState } from "@/shared/hooks/use-form-state";
 import { CATEGORY_TYPES } from "@/shared/lib/categories/constants";
 import { getDefaultIconForType } from "@/shared/lib/categories/icons";
+import { buildIntegrationsSettingsHref } from "@/shared/lib/inbox-integrations/types";
 
 import { CategoryFormFields } from "./category-form-fields";
 import type { Category, CategoryFormValues } from "./types";
@@ -49,6 +52,7 @@ const buildInitialValues = ({
 		name: category?.name ?? "",
 		type: initialType,
 		icon,
+		partyKind: category?.partyKind ?? null,
 	};
 };
 
@@ -60,6 +64,7 @@ export function CategoryDialog({
 	open,
 	onOpenChange,
 }: CategoryDialogProps) {
+	const router = useRouter();
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 	const [isPending, startTransition] = useTransition();
 
@@ -113,6 +118,7 @@ export function CategoryDialog({
 			name: formState.name.trim(),
 			type: formState.type,
 			icon: formState.icon.trim(),
+			partyKind: formState.partyKind,
 		};
 
 		startTransition(async () => {
@@ -125,7 +131,23 @@ export function CategoryDialog({
 						});
 
 			if (result.success) {
-				toast.success(result.message);
+				const createdId = result.data?.id;
+				toast.success(result.message, {
+					action:
+						mode === "create" && createdId
+							? {
+									label: "Integrações",
+									onClick: () =>
+										router.push(
+											buildIntegrationsSettingsHref({
+												entityType: "category",
+												entityId: createdId,
+												entityLabel: payload.name,
+											}),
+										),
+								}
+							: undefined,
+				});
 				setDialogOpen(false);
 				resetForm(initialState);
 				return;
@@ -142,6 +164,13 @@ export function CategoryDialog({
 			? "Crie uma categoria para organizar seus lançamentos."
 			: "Atualize os detalhes da categoria selecionada.";
 	const submitLabel = mode === "create" ? "Salvar" : "Atualizar";
+	const integrationsHref = category
+		? buildIntegrationsSettingsHref({
+				entityType: "category",
+				entityId: category.id,
+				entityLabel: category.name,
+			})
+		: null;
 
 	return (
 		<Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -168,6 +197,17 @@ export function CategoryDialog({
 						>
 							Cancelar
 						</Button>
+						{mode === "update" && integrationsHref ? (
+							<Button
+								type="button"
+								variant="outline"
+								onClick={() => router.push(integrationsHref)}
+								disabled={isPending}
+							>
+								<RiLinkM className="size-4" />
+								Integrações
+							</Button>
+						) : null}
 						<Button type="submit" disabled={isPending}>
 							{isPending ? "Salvando..." : submitLabel}
 						</Button>

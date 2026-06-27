@@ -72,6 +72,7 @@ export type TransactionFormState = {
 	condition: string;
 	paymentMethod: string;
 	payerId: string | undefined;
+	partyId: string | undefined;
 	secondaryPayerId: string | undefined;
 	splitShares: Array<{ payerId: string; amount: string }>;
 	isSplit: boolean;
@@ -94,6 +95,8 @@ export type TransactionFormState = {
  */
 type TransactionFormOverrides = {
 	defaultCardId?: string | null;
+	defaultCategoryId?: string | null;
+	defaultPartyId?: string | null;
 	defaultAccountId?: string | null;
 	defaultPaymentMethod?: string | null;
 	defaultPurchaseDate?: string | null;
@@ -132,6 +135,9 @@ export function buildTransactionInitialState(
 	const fallbackPayerId = isImporting
 		? (defaultPayerId ?? null)
 		: (transaction?.payerId ?? defaultPayerId ?? null);
+	const fallbackPartyId = !isImporting
+		? (transaction?.partyId ?? overrides?.defaultPartyId ?? null)
+		: null;
 
 	const boletoPaymentDate =
 		transaction?.boletoPaymentDate ??
@@ -171,6 +177,7 @@ export function buildTransactionInitialState(
 		condition: transaction?.condition ?? TRANSACTION_CONDITIONS[0],
 		paymentMethod,
 		payerId: fallbackPayerId ?? undefined,
+		partyId: fallbackPartyId ?? undefined,
 		secondaryPayerId: undefined,
 		splitShares: [],
 		isSplit: false,
@@ -193,7 +200,7 @@ export function buildTransactionInitialState(
 				: undefined,
 		categoryId: isImporting
 			? undefined
-			: (transaction?.categoryId ?? undefined),
+			: (transaction?.categoryId ?? overrides?.defaultCategoryId ?? undefined),
 		installmentCount: transaction?.installmentCount
 			? String(transaction.installmentCount)
 			: "",

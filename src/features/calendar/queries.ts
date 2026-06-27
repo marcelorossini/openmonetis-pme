@@ -236,6 +236,7 @@ export const fetchCalendarData = async ({
 			payerOptions: optionSets.payerOptions,
 			splitPayerOptions: optionSets.splitPayerOptions,
 			defaultPayerId: optionSets.defaultPayerId,
+			partyOptions: optionSets.partyOptions,
 			accountOptions: optionSets.accountOptions,
 			cardOptions: optionSets.cardOptions,
 			categoryOptions: optionSets.categoryOptions,

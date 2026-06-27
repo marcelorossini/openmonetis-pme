@@ -1,10 +1,11 @@
 import { and, eq, gt, isNull } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { apiTokens, inboxItems } from "@/db/schema";
+import { apiTokens } from "@/db/schema";
 import { extractBearerToken, hashToken } from "@/shared/lib/auth/api-token";
 import { db } from "@/shared/lib/db";
 import { inboxItemSchema } from "@/shared/lib/schemas/inbox";
+import { InboxApiValidationError, processInboxApiItem } from "./processing";
 
 // Rate limiting simples em memória (em produção, use Redis)
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
@@ -79,21 +80,10 @@ export async function POST(request: Request) {
 		const body = await request.json();
 		const data = inboxItemSchema.parse(body);
 
-		// Inserir item na inbox
-		const [inserted] = await db
-			.insert(inboxItems)
-			.values({
-				userId: tokenRecord.userId,
-				sourceApp: data.sourceApp,
-				sourceAppName: data.sourceAppName,
-				originalTitle: data.originalTitle,
-				originalText: data.originalText,
-				notificationTimestamp: data.notificationTimestamp,
-				parsedName: data.parsedName,
-				parsedAmount: data.parsedAmount?.toString(),
-				status: "pending",
-			})
-			.returning({ id: inboxItems.id });
+		const result = await processInboxApiItem({
+			userId: tokenRecord.userId,
+			data,
+		});
 
 		// Atualizar último uso do token
 		const clientIp =
@@ -111,9 +101,15 @@ export async function POST(request: Request) {
 
 		return NextResponse.json(
 			{
-				id: inserted.id,
+				id: result.serverId,
 				clientId: data.clientId,
-				message: "Notificação recebida",
+				message: result.autoImported
+					? "Notificação importada automaticamente"
+					: "Notificação recebida",
+				status: result.status,
+				autoImported: result.autoImported,
+				transactionId: result.transactionId,
+				autoImportError: result.autoImportError,
 			},
 			{ status: 201 },
 		);
@@ -123,6 +119,9 @@ export async function POST(request: Request) {
 				{ error: error.issues[0]?.message ?? "Dados inválidos" },
 				{ status: 400 },
 			);
+		}
+		if (error instanceof InboxApiValidationError) {
+			return NextResponse.json({ error: error.message }, { status: 400 });
 		}
 
 		console.error("[API] Error creating inbox item:", error);

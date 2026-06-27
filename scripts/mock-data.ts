@@ -1721,7 +1721,7 @@ async function main() {
 				condition: "À vista",
 				paymentMethod: "Pix",
 				accountId: createdAccounts.itau,
-				categoryId: getCategoryId("Freelance"),
+				categoryId: getCategoryId("Serviços Prestados"),
 				payerId: adminPayer.id,
 				note: "Projeto freelance de consultoria.",
 			});

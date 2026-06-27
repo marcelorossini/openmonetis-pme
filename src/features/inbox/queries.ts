@@ -153,6 +153,7 @@ export async function fetchInboxDialogData(userId: string): Promise<{
 	payerOptions: SelectOption[];
 	splitPayerOptions: SelectOption[];
 	defaultPayerId: string | null;
+	partyOptions: SelectOption[];
 	accountOptions: SelectOption[];
 	cardOptions: SelectOption[];
 	categoryOptions: SelectOption[];
@@ -165,6 +166,7 @@ export async function fetchInboxDialogData(userId: string): Promise<{
 		payerOptions,
 		splitPayerOptions,
 		defaultPayerId,
+		partyOptions,
 		accountOptions,
 		cardOptions,
 		categoryOptions,
@@ -179,6 +181,7 @@ export async function fetchInboxDialogData(userId: string): Promise<{
 		payerOptions,
 		splitPayerOptions,
 		defaultPayerId,
+		partyOptions,
 		accountOptions,
 		cardOptions,
 		categoryOptions,

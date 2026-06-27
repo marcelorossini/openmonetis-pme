@@ -15,6 +15,7 @@ export type TransactionDialogOptions = {
 	payerOptions: SelectOption[];
 	splitPayerOptions: SelectOption[];
 	defaultPayerId: string | null;
+	partyOptions: SelectOption[];
 	accountOptions: SelectOption[];
 	cardOptions: SelectOption[];
 	categoryOptions: SelectOption[];
@@ -35,6 +36,7 @@ export async function fetchTransactionDialogOptionsAction(): Promise<Transaction
 		payerOptions,
 		splitPayerOptions,
 		defaultPayerId,
+		partyOptions,
 		accountOptions,
 		cardOptions,
 		categoryOptions,
@@ -47,6 +49,7 @@ export async function fetchTransactionDialogOptionsAction(): Promise<Transaction
 		payerOptions,
 		splitPayerOptions,
 		defaultPayerId,
+		partyOptions,
 		accountOptions,
 		cardOptions,
 		categoryOptions,

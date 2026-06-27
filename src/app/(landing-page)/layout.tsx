@@ -5,9 +5,10 @@ const BASE_URL = process.env.PUBLIC_DOMAIN
 	? `https://${process.env.PUBLIC_DOMAIN}`
 	: "https://openmonetis.com";
 
-const TITLE = "OpenMonetis | Finanças pessoais self-hosted e open source";
+const TITLE =
+	"OpenMonetis PME | Controle financeiro simples para pequenas empresas";
 const DESCRIPTION =
-	"Aplicativo self-hosted de finanças pessoais. Controle lançamentos, cartões, orçamentos e categorias com total privacidade. Open source e gratuito.";
+	"Fork nao oficial do OpenMonetis, adaptado para pequenas empresas com foco em contas a pagar, contas a receber, clientes, fornecedores e fluxo de caixa. Creditos ao autor original Felipe Coutinho.";
 
 export const metadata: Metadata = {
 	metadataBase: new URL(BASE_URL),
@@ -41,7 +42,7 @@ export const metadata: Metadata = {
 				url: "/images/dashboard-preview-light.png",
 				width: 1920,
 				height: 1080,
-				alt: "OpenMonetis — Dashboard de finanças pessoais",
+				alt: "OpenMonetis PME — Dashboard de controle financeiro para pequenas empresas",
 			},
 		],
 	},

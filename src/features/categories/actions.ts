@@ -10,6 +10,7 @@ import {
 } from "@/shared/lib/actions/helpers";
 import { getUser } from "@/shared/lib/auth/server";
 import { CATEGORY_TYPES } from "@/shared/lib/categories/constants";
+import { CATEGORY_PARTY_KINDS } from "@/shared/lib/categories/party-kind";
 import { db } from "@/shared/lib/db";
 import { uuidSchema } from "@/shared/lib/schemas/common";
 import { normalizeIconInput } from "@/shared/utils/string";
@@ -28,6 +29,12 @@ const categoryBaseSchema = z.object({
 		.max(100, "O ícone deve ter no máximo 100 caracteres.")
 		.nullish()
 		.transform((value) => normalizeIconInput(value)),
+	partyKind: z
+		.enum(CATEGORY_PARTY_KINDS, {
+			message: "Tipo de vínculo inválido.",
+		})
+		.nullish()
+		.transform((value) => value ?? null),
 });
 
 const createCategorySchema = categoryBaseSchema;
@@ -44,23 +51,31 @@ type CategoryDeleteInput = z.infer<typeof deleteCategorySchema>;
 
 export async function createCategoryAction(
 	input: CategoryCreateInput,
-): Promise<ActionResult> {
+): Promise<ActionResult<{ id: string }>> {
 	try {
 		const user = await getUser();
 		const data = createCategorySchema.parse(input);
 
-		await db.insert(categories).values({
-			name: data.name,
-			type: data.type,
-			icon: data.icon,
-			userId: user.id,
-		});
+		const [created] = await db
+			.insert(categories)
+			.values({
+				name: data.name,
+				type: data.type,
+				icon: data.icon,
+				partyKind: data.partyKind,
+				userId: user.id,
+			})
+			.returning({ id: categories.id });
 
 		revalidateForEntity("categories", user.id);
 
-		return { success: true, message: "Category criada com sucesso." };
+		return {
+			success: true,
+			message: "Category criada com sucesso.",
+			data: created ? { id: created.id } : undefined,
+		};
 	} catch (error) {
-		return handleActionError(error);
+		return handleActionError(error) as ActionResult<{ id: string }>;
 	}
 }
 
@@ -103,6 +118,7 @@ export async function updateCategoryAction(
 				name: data.name,
 				type: data.type,
 				icon: data.icon,
+				partyKind: data.partyKind,
 			})
 			.where(and(eq(categories.id, data.id), eq(categories.userId, user.id)))
 			.returning();

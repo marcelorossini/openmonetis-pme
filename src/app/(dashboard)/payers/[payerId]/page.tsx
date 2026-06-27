@@ -79,6 +79,7 @@ const EMPTY_FILTERS: TransactionSearchFilters = {
 	conditionFilters: [],
 	paymentFilters: [],
 	payerFilters: [],
+	partyFilters: [],
 	categoryFilters: [],
 	accountCardFilters: [],
 	searchFilter: null,
@@ -93,6 +94,7 @@ const EMPTY_FILTERS: TransactionSearchFilters = {
 
 const createEmptySlugMaps = (): SlugMaps => ({
 	payer: new Map(),
+	party: new Map(),
 	category: new Map(),
 	financialAccount: new Map(),
 	card: new Map(),
@@ -150,6 +152,7 @@ export default async function Page({ params, searchParams }: PageProps) {
 		loggedUserFilterSources = await fetchTransactionFilterSources(userId);
 		sluggedFilters = {
 			payerFiltersRaw: [],
+			partyFiltersRaw: [],
 			categoryFiltersRaw: [],
 			accountFiltersRaw: [],
 			cardFiltersRaw: [],
@@ -250,6 +253,7 @@ export default async function Page({ params, searchParams }: PageProps) {
 					avatarUrl: pagador.avatarUrl,
 				},
 			],
+			partyFiltersRaw: [],
 			categoryFiltersRaw: [],
 			accountFiltersRaw: [],
 			cardFiltersRaw: [],
@@ -396,10 +400,12 @@ export default async function Page({ params, searchParams }: PageProps) {
 								payerOptions={optionSets.payerOptions}
 								splitPayerOptions={optionSets.splitPayerOptions}
 								defaultPayerId={pagador.id}
+								partyOptions={optionSets.partyOptions}
 								accountOptions={optionSets.accountOptions}
 								cardOptions={optionSets.cardOptions}
 								categoryOptions={optionSets.categoryOptions}
 								payerFilterOptions={payerFilterOptions}
+								partyFilterOptions={optionSets.partyFilterOptions}
 								categoryFilterOptions={optionSets.categoryFilterOptions}
 								accountCardFilterOptions={optionSets.accountCardFilterOptions}
 								selectedPeriod={selectedPeriod}
@@ -413,6 +419,7 @@ export default async function Page({ params, searchParams }: PageProps) {
 									loggedUserOptionSets?.splitPayerOptions
 								}
 								importDefaultPayerId={loggedUserOptionSets?.defaultPayerId}
+								importPartyOptions={loggedUserOptionSets?.partyOptions}
 								importAccountOptions={loggedUserOptionSets?.accountOptions}
 								importCardOptions={loggedUserOptionSets?.cardOptions}
 								importCategoryOptions={loggedUserOptionSets?.categoryOptions}

@@ -205,6 +205,7 @@ export function PreferencesForm({
 						tabela do extrato e dos lançamentos.
 					</p>
 					<DndContext
+						id="settings-preferences-column-order"
 						sensors={sensors}
 						collisionDetection={closestCenter}
 						onDragEnd={handleColumnDragEnd}

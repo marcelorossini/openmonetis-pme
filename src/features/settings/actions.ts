@@ -2,15 +2,30 @@
 
 import { createHash, randomBytes } from "node:crypto";
 import { verifyPassword } from "better-auth/crypto";
-import { and, eq, isNull, ne, or } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
+import { and, eq, isNull, ne, or, sql } from "drizzle-orm";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { headers } from "next/headers";
 import { z } from "zod";
-import { account, apiTokens, payers } from "@/db/schema";
+import { account, apiTokens, appBrandingSettings, payers } from "@/db/schema";
 import { revalidateForEntity } from "@/shared/lib/actions/helpers";
 import { auth } from "@/shared/lib/auth/config";
+import { getUser } from "@/shared/lib/auth/server";
+import {
+	DEFAULT_PRIMARY_COLOR_HEX,
+	normalizePrimaryColorHex,
+} from "@/shared/lib/branding/color";
+import {
+	BrandingLogoValidationError,
+	prepareBrandingLogoForStorage,
+} from "@/shared/lib/branding/logo";
+import {
+	APP_BRANDING_CACHE_TAG,
+	APP_BRANDING_ID,
+} from "@/shared/lib/branding/queries";
 import { DEFAULT_CATEGORIES } from "@/shared/lib/categories/defaults";
 import { db, schema } from "@/shared/lib/db";
+import { normalizeOptionalText } from "@/shared/lib/inbox-integrations/mapping";
+import { reprocessPendingInboxItem } from "@/shared/lib/inbox-integrations/service";
 import {
 	DEFAULT_PAYER_AVATAR,
 	PAYER_ROLE_ADMIN,
@@ -71,6 +86,27 @@ const updatePreferencesSchema = z.object({
 	showTransactionSummary: z.boolean(),
 });
 
+const updateBrandingColorSchema = z.object({
+	primaryColorHex: z.string().nullable(),
+});
+
+const integrationEntitySchema = z.enum(["account", "party", "category"]);
+
+const saveIntegrationMappingSchema = z.object({
+	entityType: integrationEntitySchema,
+	sourceApp: z.string().min(1, "Informe a origem").max(255),
+	profileKey: z.string().max(255).optional(),
+	externalKey: z.string().min(1, "Informe o valor recebido").max(255),
+	targetId: z.string().uuid("Destino inválido"),
+});
+
+const deleteIntegrationMappingSchema = z.object({
+	entityType: integrationEntitySchema,
+	sourceApp: z.string().min(1, "Informe a origem").max(255),
+	profileKey: z.string().max(255).optional(),
+	externalKey: z.string().min(1, "Informe o valor recebido").max(255),
+});
+
 type ResettableUser = {
 	name: string | null;
 	email: string | null;
@@ -106,6 +142,12 @@ async function resetUserAppData(
 		await tx
 			.delete(schema.userPreferences)
 			.where(eq(schema.userPreferences.userId, userId));
+		await tx
+			.delete(schema.integrationPartyMappings)
+			.where(eq(schema.integrationPartyMappings.userId, userId));
+		await tx
+			.delete(schema.integrationCategoryMappings)
+			.where(eq(schema.integrationCategoryMappings.userId, userId));
 		await tx
 			.delete(schema.apiTokens)
 			.where(eq(schema.apiTokens.userId, userId));
@@ -167,6 +209,35 @@ async function resetUserAppData(
 			}),
 		),
 	);
+}
+
+async function upsertBrandingSettings(
+	values: Partial<typeof appBrandingSettings.$inferInsert>,
+) {
+	const [existing] = await db
+		.select({ id: appBrandingSettings.id })
+		.from(appBrandingSettings)
+		.where(eq(appBrandingSettings.id, APP_BRANDING_ID))
+		.limit(1);
+
+	if (existing) {
+		await db
+			.update(appBrandingSettings)
+			.set({ ...values, updatedAt: new Date() })
+			.where(eq(appBrandingSettings.id, APP_BRANDING_ID));
+		return;
+	}
+
+	await db.insert(appBrandingSettings).values({
+		id: APP_BRANDING_ID,
+		...values,
+	});
+}
+
+function revalidateBranding() {
+	revalidateTag(APP_BRANDING_CACHE_TAG, "max");
+	revalidatePath("/", "layout");
+	revalidatePath("/settings");
 }
 
 // Actions
@@ -621,6 +692,123 @@ export async function updatePreferencesAction(
 	}
 }
 
+export async function updateBrandingColorAction(data: {
+	primaryColorHex: string | null;
+}): Promise<ActionResponse<{ primaryColorHex: string }>> {
+	try {
+		await getUser();
+		const validated = updateBrandingColorSchema.parse(data);
+		const normalized =
+			validated.primaryColorHex === null
+				? DEFAULT_PRIMARY_COLOR_HEX
+				: normalizePrimaryColorHex(validated.primaryColorHex);
+
+		if (!normalized) {
+			return {
+				success: false,
+				error: "Informe uma cor hexadecimal válida.",
+			};
+		}
+
+		await upsertBrandingSettings({
+			primaryColorHex:
+				normalized === DEFAULT_PRIMARY_COLOR_HEX ? null : normalized,
+		});
+
+		revalidateBranding();
+
+		return {
+			success: true,
+			message: "Cor principal atualizada com sucesso",
+			data: { primaryColorHex: normalized },
+		};
+	} catch (error) {
+		if (error instanceof z.ZodError) {
+			return {
+				success: false,
+				error: error.issues[0]?.message || "Dados inválidos",
+			};
+		}
+
+		console.error("Erro ao atualizar cor principal:", error);
+		return {
+			success: false,
+			error: "Erro ao atualizar cor principal. Tente novamente.",
+		};
+	}
+}
+
+export async function saveBrandingLogoAction(
+	formData: FormData,
+): Promise<ActionResponse> {
+	try {
+		await getUser();
+		const logo = formData.get("logo");
+
+		if (!(logo instanceof File)) {
+			return {
+				success: false,
+				error: "Selecione um arquivo de logo.",
+			};
+		}
+
+		const preparedLogo = await prepareBrandingLogoForStorage(logo);
+
+		await upsertBrandingSettings({
+			logoContentBase64: preparedLogo.logoContentBase64,
+			logoFileName: preparedLogo.logoFileName,
+			logoMimeType: preparedLogo.logoMimeType,
+			logoFileSize: preparedLogo.logoFileSize,
+		});
+
+		revalidateBranding();
+
+		return {
+			success: true,
+			message: "Logo atualizada com sucesso",
+		};
+	} catch (error) {
+		if (error instanceof BrandingLogoValidationError) {
+			return {
+				success: false,
+				error: error.message,
+			};
+		}
+
+		console.error("Erro ao salvar logo:", error);
+		return {
+			success: false,
+			error: "Erro ao salvar logo. Tente novamente.",
+		};
+	}
+}
+
+export async function resetBrandingLogoAction(): Promise<ActionResponse> {
+	try {
+		await getUser();
+
+		await upsertBrandingSettings({
+			logoContentBase64: null,
+			logoFileName: null,
+			logoMimeType: null,
+			logoFileSize: null,
+		});
+
+		revalidateBranding();
+
+		return {
+			success: true,
+			message: "Logo padrão restaurada com sucesso",
+		};
+	} catch (error) {
+		console.error("Erro ao restaurar logo padrão:", error);
+		return {
+			success: false,
+			error: "Erro ao restaurar logo padrão. Tente novamente.",
+		};
+	}
+}
+
 // API Token Actions
 
 const createApiTokenSchema = z.object({
@@ -770,5 +958,278 @@ export async function revokeApiTokenAction(
 			success: false,
 			error: "Erro ao revogar token. Tente novamente.",
 		};
+	}
+}
+
+export async function saveIntegrationMappingAction(
+	data: z.infer<typeof saveIntegrationMappingSchema>,
+): Promise<ActionResponse> {
+	try {
+		const user = await getUser();
+		const validated = saveIntegrationMappingSchema.parse(data);
+		const profileScope = normalizeOptionalText(validated.profileKey) ?? "";
+		const externalKey = validated.externalKey.trim();
+		const now = new Date();
+
+		if (validated.entityType === "account") {
+			const existingAccount = await db.query.financialAccounts.findFirst({
+				where: and(
+					eq(schema.financialAccounts.id, validated.targetId),
+					eq(schema.financialAccounts.userId, user.id),
+				),
+			});
+
+			if (!existingAccount) {
+				return { success: false, error: "Conta não encontrada." };
+			}
+
+			await db
+				.insert(schema.integrationAccountMappings)
+				.values({
+					userId: user.id,
+					sourceApp: validated.sourceApp.trim(),
+					profileKey: profileScope,
+					externalKey,
+					accountId: validated.targetId,
+					updatedAt: now,
+				})
+				.onConflictDoUpdate({
+					target: [
+						schema.integrationAccountMappings.userId,
+						schema.integrationAccountMappings.sourceApp,
+						schema.integrationAccountMappings.profileKey,
+						schema.integrationAccountMappings.externalKey,
+					],
+					set: {
+						accountId: sql`excluded.account_id`,
+						updatedAt: sql`excluded.updated_at`,
+					},
+				});
+		} else if (validated.entityType === "party") {
+			const existingParty = await db.query.parties.findFirst({
+				where: and(
+					eq(schema.parties.id, validated.targetId),
+					eq(schema.parties.userId, user.id),
+				),
+			});
+
+			if (!existingParty) {
+				return { success: false, error: "Cliente/fornecedor não encontrado." };
+			}
+
+			await db
+				.insert(schema.integrationPartyMappings)
+				.values({
+					userId: user.id,
+					sourceApp: validated.sourceApp.trim(),
+					profileKey: profileScope,
+					externalKey,
+					partyId: validated.targetId,
+					updatedAt: now,
+				})
+				.onConflictDoUpdate({
+					target: [
+						schema.integrationPartyMappings.userId,
+						schema.integrationPartyMappings.sourceApp,
+						schema.integrationPartyMappings.profileKey,
+						schema.integrationPartyMappings.externalKey,
+					],
+					set: {
+						partyId: sql`excluded.party_id`,
+						updatedAt: sql`excluded.updated_at`,
+					},
+				});
+		} else {
+			const existingCategory = await db.query.categories.findFirst({
+				where: and(
+					eq(schema.categories.id, validated.targetId),
+					eq(schema.categories.userId, user.id),
+				),
+			});
+
+			if (!existingCategory) {
+				return { success: false, error: "Categoria não encontrada." };
+			}
+
+			await db
+				.insert(schema.integrationCategoryMappings)
+				.values({
+					userId: user.id,
+					sourceApp: validated.sourceApp.trim(),
+					profileKey: profileScope,
+					externalKey,
+					categoryId: validated.targetId,
+					updatedAt: now,
+				})
+				.onConflictDoUpdate({
+					target: [
+						schema.integrationCategoryMappings.userId,
+						schema.integrationCategoryMappings.sourceApp,
+						schema.integrationCategoryMappings.profileKey,
+						schema.integrationCategoryMappings.externalKey,
+					],
+					set: {
+						categoryId: sql`excluded.category_id`,
+						updatedAt: sql`excluded.updated_at`,
+					},
+				});
+		}
+
+		await syncPendingInboxItemsForMapping({
+			userId: user.id,
+			entityType: validated.entityType,
+			sourceApp: validated.sourceApp.trim(),
+			profileKey: profileScope,
+			externalKey,
+			targetId: validated.targetId,
+		});
+
+		revalidatePath("/settings");
+		revalidateForEntity("inbox", user.id);
+
+		return {
+			success: true,
+			message: "Mapeamento salvo com sucesso.",
+		};
+	} catch (error) {
+		if (error instanceof z.ZodError) {
+			return {
+				success: false,
+				error: error.issues[0]?.message || "Dados inválidos",
+			};
+		}
+
+		console.error("Erro ao salvar mapeamento:", error);
+		return {
+			success: false,
+			error: "Erro ao salvar mapeamento. Tente novamente.",
+		};
+	}
+}
+
+export async function deleteIntegrationMappingAction(
+	data: z.infer<typeof deleteIntegrationMappingSchema>,
+): Promise<ActionResponse> {
+	try {
+		const user = await getUser();
+		const validated = deleteIntegrationMappingSchema.parse(data);
+		const sourceApp = validated.sourceApp.trim();
+		const profileScope = normalizeOptionalText(validated.profileKey) ?? "";
+		const externalKey = validated.externalKey.trim();
+
+		if (validated.entityType === "account") {
+			await db
+				.delete(schema.integrationAccountMappings)
+				.where(
+					and(
+						eq(schema.integrationAccountMappings.userId, user.id),
+						eq(schema.integrationAccountMappings.sourceApp, sourceApp),
+						eq(schema.integrationAccountMappings.profileKey, profileScope),
+						eq(schema.integrationAccountMappings.externalKey, externalKey),
+					),
+				);
+		} else if (validated.entityType === "party") {
+			await db
+				.delete(schema.integrationPartyMappings)
+				.where(
+					and(
+						eq(schema.integrationPartyMappings.userId, user.id),
+						eq(schema.integrationPartyMappings.sourceApp, sourceApp),
+						eq(schema.integrationPartyMappings.profileKey, profileScope),
+						eq(schema.integrationPartyMappings.externalKey, externalKey),
+					),
+				);
+		} else {
+			await db
+				.delete(schema.integrationCategoryMappings)
+				.where(
+					and(
+						eq(schema.integrationCategoryMappings.userId, user.id),
+						eq(schema.integrationCategoryMappings.sourceApp, sourceApp),
+						eq(schema.integrationCategoryMappings.profileKey, profileScope),
+						eq(schema.integrationCategoryMappings.externalKey, externalKey),
+					),
+				);
+		}
+
+		revalidatePath("/settings");
+
+		return {
+			success: true,
+			message: "Mapeamento removido.",
+		};
+	} catch (error) {
+		if (error instanceof z.ZodError) {
+			return {
+				success: false,
+				error: error.issues[0]?.message || "Dados inválidos",
+			};
+		}
+
+		console.error("Erro ao remover mapeamento:", error);
+		return {
+			success: false,
+			error: "Erro ao remover mapeamento. Tente novamente.",
+		};
+	}
+}
+
+async function syncPendingInboxItemsForMapping({
+	userId,
+	entityType,
+	sourceApp,
+	profileKey,
+	externalKey,
+	targetId,
+}: {
+	userId: string;
+	entityType: "account" | "party" | "category";
+	sourceApp: string;
+	profileKey: string;
+	externalKey: string;
+	targetId: string;
+}) {
+	const pendingItems = await db.query.inboxItems.findMany({
+		where: and(
+			eq(schema.inboxItems.userId, userId),
+			eq(schema.inboxItems.status, "pending"),
+			eq(schema.inboxItems.sourceApp, sourceApp),
+			entityType === "account"
+				? eq(schema.inboxItems.accountExternalKey, externalKey)
+				: entityType === "party"
+					? eq(schema.inboxItems.partyExternalKey, externalKey)
+					: eq(schema.inboxItems.categoryExternalKey, externalKey),
+			profileKey
+				? eq(schema.inboxItems.profileKey, profileKey)
+				: isNull(schema.inboxItems.profileKey),
+		),
+	});
+
+	for (const item of pendingItems) {
+		const nextAccountId =
+			entityType === "account" ? (item.accountId ?? targetId) : item.accountId;
+		const nextPartyId =
+			entityType === "party" ? (item.partyId ?? targetId) : item.partyId;
+		const nextCategoryId =
+			entityType === "category"
+				? (item.categoryId ?? targetId)
+				: item.categoryId;
+
+		await db
+			.update(schema.inboxItems)
+			.set({
+				accountId: nextAccountId,
+				partyId: nextPartyId,
+				categoryId: nextCategoryId,
+				updatedAt: new Date(),
+			})
+			.where(eq(schema.inboxItems.id, item.id));
+
+		if (item.autoImportRequested) {
+			await reprocessPendingInboxItem({
+				userId,
+				inboxItemId: item.id,
+			});
+		}
 	}
 }

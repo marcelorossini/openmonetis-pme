@@ -4,7 +4,9 @@ import { redirect } from "next/navigation";
 import { connection } from "next/server";
 
 import { CompanionTab } from "@/features/settings/components/companion-tab";
+import { CustomizationForm } from "@/features/settings/components/customization-form";
 import { DeleteAccountForm } from "@/features/settings/components/delete-account-form";
+import { IntegrationsTab } from "@/features/settings/components/integrations-tab";
 import { PasskeysForm } from "@/features/settings/components/passkeys-form";
 import { PreferencesForm } from "@/features/settings/components/preferences-form";
 import { UpdateEmailForm } from "@/features/settings/components/update-email-form";
@@ -20,8 +22,25 @@ import {
 	TabsTrigger,
 } from "@/shared/components/ui/tabs";
 import { auth } from "@/shared/lib/auth/config";
+import { fetchAppBrandingSettings } from "@/shared/lib/branding/queries";
+import type { IntegrationEntityType } from "@/shared/lib/inbox-integrations/types";
 
-export default async function Page() {
+type PageSearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+type PageProps = {
+	searchParams?: PageSearchParams;
+};
+
+const getSingleParam = (
+	params: Record<string, string | string[] | undefined> | undefined,
+	key: string,
+) => {
+	const value = params?.[key];
+	if (!value) return null;
+	return Array.isArray(value) ? (value[0] ?? null) : value;
+};
+
+export default async function Page({ searchParams }: PageProps) {
 	await connection();
 	const session = await auth.api.getSession({
 		headers: await headers(),
@@ -33,19 +52,51 @@ export default async function Page() {
 
 	const userName = session.user.name || "";
 	const userEmail = session.user.email || "";
+	const resolvedSearchParams = searchParams ? await searchParams : undefined;
+	const activeTab =
+		getSingleParam(resolvedSearchParams, "tab") ?? "preferencias";
+	const rawFocusEntityType = getSingleParam(resolvedSearchParams, "entityType");
+	const focusEntityType =
+		rawFocusEntityType === "account" ||
+		rawFocusEntityType === "party" ||
+		rawFocusEntityType === "category"
+			? (rawFocusEntityType as IntegrationEntityType)
+			: null;
+	const focusEntityId = getSingleParam(resolvedSearchParams, "entityId");
+	const focusEntity =
+		focusEntityType && focusEntityId
+			? {
+					entityType: focusEntityType,
+					entityId: focusEntityId,
+				}
+			: null;
 
-	const { authProvider, userPreferences, userApiTokens } =
-		await fetchSettingsPageData(session.user.id);
+	const [
+		{
+			authProvider,
+			userPreferences,
+			userApiTokens,
+			integrationPendingMappings,
+			integrationSavedMappings,
+			integrationTargetOptions,
+		},
+		appBranding,
+	] = await Promise.all([
+		fetchSettingsPageData(session.user.id),
+		fetchAppBrandingSettings(),
+	]);
 
 	return (
 		<div className="w-full">
-			<Tabs defaultValue="preferencias" className="w-full">
+			<Tabs defaultValue={activeTab} className="w-full">
 				{/* No mobile: rolagem horizontal + seta indicando mais opções à direita */}
 				<div className="relative -mx-6 px-6 md:mx-0 md:px-0">
 					<div className="overflow-x-auto overflow-y-hidden scroll-smooth md:overflow-visible [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
 						<TabsList className="inline-flex w-max flex-nowrap md:w-full">
 							<TabsTrigger value="preferencias">Preferências</TabsTrigger>
+							<TabsTrigger value="personalizacao">Personalização</TabsTrigger>
 							<TabsTrigger value="companion">Companion</TabsTrigger>
+							<TabsTrigger value="integracoes">Integrações</TabsTrigger>
 							<TabsTrigger value="nome">Alterar nome</TabsTrigger>
 							<TabsTrigger value="senha">Alterar senha</TabsTrigger>
 							<TabsTrigger value="passkeys">Passkeys</TabsTrigger>
@@ -90,6 +141,25 @@ export default async function Page() {
 					</Card>
 				</TabsContent>
 
+				<TabsContent value="personalizacao" className="mt-4">
+					<Card className="p-6">
+						<div className="space-y-4">
+							<div>
+								<h2 className="text-xl font-semibold mb-1">Personalização</h2>
+								<p className="text-sm text-muted-foreground">
+									Defina a identidade visual desta instalação do OpenMonetis.
+								</p>
+							</div>
+							<Separator />
+							<CustomizationForm
+								primaryColorHex={appBranding.primaryColorHex}
+								logoUrl={appBranding.logoUrl}
+								logoFileName={appBranding.logoFileName}
+							/>
+						</div>
+					</Card>
+				</TabsContent>
+
 				<TabsContent value="companion" className="mt-4">
 					<Card className="p-6">
 						<div className="space-y-4">
@@ -111,6 +181,29 @@ export default async function Page() {
 							</div>
 							<Separator />
 							<CompanionTab tokens={userApiTokens} />
+						</div>
+					</Card>
+				</TabsContent>
+
+				<TabsContent value="integracoes" className="mt-4">
+					<Card className="p-6">
+						<div className="space-y-4">
+							<div>
+								<h2 className="text-xl font-semibold mb-1">Integrações</h2>
+								<p className="text-sm text-muted-foreground">
+									Mapeie valores externos recebidos pela inbox para contas,
+									categorias e clientes/fornecedores locais.
+								</p>
+							</div>
+							<Separator />
+							<IntegrationsTab
+								pendingMappings={integrationPendingMappings}
+								savedMappings={integrationSavedMappings}
+								accountOptions={integrationTargetOptions.accountOptions}
+								partyOptions={integrationTargetOptions.partyOptions}
+								categoryOptions={integrationTargetOptions.categoryOptions}
+								focusEntity={focusEntity}
+							/>
 						</div>
 					</Card>
 				</TabsContent>
