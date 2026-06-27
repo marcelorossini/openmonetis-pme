@@ -13,6 +13,7 @@ Esta próxima versão amplia o vínculo de lançamentos com contatos externos: c
 - Clientes e fornecedores: nova área em `/parties` para cadastrar contatos ativos e inativos com tipo, documento, email, telefone e anotação opcional.
 - Categorias: novo campo de vínculo no lançamento para escolher nenhum, cliente ou fornecedor.
 - Lançamentos: o campo Cliente/Fornecedor aparece conforme a categoria selecionada, com coluna e filtro dedicados na lista de lançamentos.
+- Companion/API: endpoints de pré-lançamentos agora aceitam conta, cartão, categoria, pessoa, cliente/fornecedor, forma de pagamento, data da compra e tentativa de importação automática para lançamento.
 
 ### Alterado
 - Clientes: a rota antiga `/clients` redireciona para `/parties`.

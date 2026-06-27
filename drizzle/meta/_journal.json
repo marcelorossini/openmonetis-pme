@@ -253,6 +253,13 @@
 			"when": 1782487000000,
 			"tag": "0036_migrate_clients_to_parties",
 			"breakpoints": true
+		},
+		{
+			"idx": 37,
+			"version": "7",
+			"when": 1782490000000,
+			"tag": "0037_expand_inbox_auto_import",
+			"breakpoints": true
 		}
 	]
 }

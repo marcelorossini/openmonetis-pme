@@ -11,6 +11,16 @@ export interface InboxItem {
 	notificationTimestamp: Date;
 	parsedName: string | null;
 	parsedAmount: string | null;
+	purchaseDate: Date | null;
+	transactionType: string | null;
+	paymentMethod: string | null;
+	accountId: string | null;
+	cardId: string | null;
+	categoryId: string | null;
+	payerId: string | null;
+	partyId: string | null;
+	autoImportRequested: boolean;
+	autoImportError: string | null;
 	status: string;
 	transactionId: string | null;
 	processedAt: Date | null;

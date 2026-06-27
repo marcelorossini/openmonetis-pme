@@ -553,6 +553,33 @@ export const inboxItems = pgTable(
 		// Dados parseados (editáveis pelo usuário antes de lançar)
 		parsedName: text("parsed_name"), // Nome do estabelecimento
 		parsedAmount: numeric("parsed_amount", { precision: 12, scale: 2 }),
+		purchaseDate: date("data_compra", { mode: "date" }),
+		transactionType: text("tipo_transacao"),
+		paymentMethod: text("forma_pagamento"),
+		accountId: uuid("conta_id").references(() => financialAccounts.id, {
+			onDelete: "set null",
+			onUpdate: "cascade",
+		}),
+		cardId: uuid("cartao_id").references(() => cards.id, {
+			onDelete: "set null",
+			onUpdate: "cascade",
+		}),
+		categoryId: uuid("categoria_id").references(() => categories.id, {
+			onDelete: "set null",
+			onUpdate: "cascade",
+		}),
+		payerId: uuid("pagador_id").references(() => payers.id, {
+			onDelete: "set null",
+			onUpdate: "cascade",
+		}),
+		partyId: uuid("cliente_fornecedor_id").references(() => parties.id, {
+			onDelete: "set null",
+			onUpdate: "cascade",
+		}),
+		autoImportRequested: boolean("auto_import_requested")
+			.notNull()
+			.default(false),
+		autoImportError: text("auto_import_error"),
 
 		// Status de processamento
 		status: text("status").notNull().default("pending"), // pending, processed, discarded

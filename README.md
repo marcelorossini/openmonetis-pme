@@ -85,6 +85,8 @@ A ideia é simples: ter um lugar onde consigo ver todas as minhas contas, cartõ
 
 📲 **OpenMonetis Companion** — App Android que captura notificações bancárias (Nubank, Itaú, Bradesco, Inter, C6 e outros) e envia automaticamente como pré-lançamentos para revisão — sem digitar nada. [Repositório](https://github.com/felipegcoutinho/openmonetis-companion).
 
+O endpoint do Companion também aceita dados canônicos para agilizar a revisão: data da compra, forma de pagamento, conta ou cartão, categoria, pessoa e cliente/fornecedor. Quando o payload envia `autoImport: true`, o OpenMonetis tenta criar o lançamento automaticamente; se faltar algum dado obrigatório, o item permanece na inbox para revisão.
+
 <p align="center">
   <img src="./public/images/companion-preview-light.webp" alt="OpenMonetis Companion" width="300" height="600" />
 </p>

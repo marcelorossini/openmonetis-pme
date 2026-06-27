@@ -22,11 +22,9 @@ import {
 	getBusinessTodayDate,
 	parseLocalDateString,
 } from "@/shared/utils/date";
-import { copyAttachmentsForImport } from "../lib/attachment-copy";
 import { detectInstallmentFromName } from "../lib/installment-detection";
 import { cleanupAttachmentsAfterTransactionDelete } from "./attachments";
 import {
-	buildShares,
 	buildTransactionRecords,
 	type ConvertToInstallmentInput,
 	type ConvertToRecurringInput,
@@ -34,7 +32,6 @@ import {
 	centsToDecimalString,
 	convertToInstallmentSchema,
 	convertToRecurringSchema,
-	createSchema,
 	type DeleteInput,
 	deleteSchema,
 	formatPaidInvoicePeriods,
@@ -52,164 +49,17 @@ import {
 	validateAllOwnership,
 	validateCardLimit,
 } from "./core";
+import { createTransactionForUser } from "./create-service";
 
 export async function createTransactionAction(
 	input: CreateInput,
 ): Promise<ActionResult<{ ids: string[] }>> {
-	try {
-		const user = await getUser();
-		const data = createSchema.parse(input);
-		const party = await resolvePartyForTransaction(user.id, data);
-		if (!party.ok) {
-			return { success: false, error: party.error };
-		}
-
-		const ownershipError = await validateAllOwnership(user.id, {
-			payerId: data.payerId,
-			secondaryPayerId: data.secondaryPayerId,
-			splitPayerIds: data.splitShares?.map((share) => share.payerId),
-			categoryId: data.categoryId,
-			partyId: party.partyId,
-			accountId: data.accountId,
-			cardId: data.cardId,
-		});
-		if (ownershipError) {
-			return { success: false, error: ownershipError };
-		}
-
-		const period = resolvePeriod(data.purchaseDate, data.period);
-		const purchaseDate = parseLocalDateString(data.purchaseDate);
-		const dueDate = data.dueDate ? parseLocalDateString(data.dueDate) : null;
-		const shouldSetBoletoPaymentDate =
-			data.paymentMethod === "Boleto" && (data.isSettled ?? false);
-		const boletoPaymentDate = shouldSetBoletoPaymentDate
-			? data.boletoPaymentDate
-				? parseLocalDateString(data.boletoPaymentDate)
-				: getBusinessTodayDate()
-			: null;
-
-		const amountSign: 1 | -1 = data.transactionType === "Despesa" ? -1 : 1;
-		const totalCents = Math.round(Math.abs(data.amount) * 100);
-		const shouldNullifySettled = data.paymentMethod === "Cartão de crédito";
-
-		const shares = buildShares({
-			totalCents,
-			payerId: data.payerId ?? null,
-			isSplit: data.isSplit ?? false,
-			secondaryPayerId: data.secondaryPayerId,
-			splitShares: data.splitShares,
-			primarySplitAmountCents: data.primarySplitAmount
-				? Math.round(data.primarySplitAmount * 100)
-				: undefined,
-			secondarySplitAmountCents: data.secondarySplitAmount
-				? Math.round(data.secondarySplitAmount * 100)
-				: undefined,
-		});
-
-		const isSeriesLancamento =
-			data.condition === "Parcelado" || data.condition === "Recorrente";
-		const seriesId = isSeriesLancamento ? randomUUID() : null;
-
-		const records = buildTransactionRecords({
-			data,
-			userId: user.id,
-			period,
-			purchaseDate,
-			dueDate,
-			shares,
-			amountSign,
-			shouldNullifySettled,
-			boletoPaymentDate,
-			seriesId,
-			categoryPartyKind: party.categoryPartyKind,
-		});
-
-		if (!records.length) {
-			throw new Error("Não foi possível criar os lançamentos solicitados.");
-		}
-
-		if (data.cardId) {
-			const uniquePeriods = [
-				...new Set(
-					records.map((r) => r.period).filter((p): p is string => Boolean(p)),
-				),
-			];
-
-			const paidPeriods = await getPaidInvoicePeriods(
-				user.id,
-				data.cardId,
-				uniquePeriods,
-			);
-
-			if (paidPeriods.length > 0) {
-				return {
-					success: false,
-					error: `As faturas dos meses ${formatPaidInvoicePeriods(
-						paidPeriods,
-					)} já estão pagas. Desfaça o pagamento antes de adicionar este lançamento.`,
-				} as ActionResult<{ ids: string[] }>;
-			}
-
-			if (data.transactionType === "Despesa") {
-				const limitCheck = await validateCardLimit({
-					userId: user.id,
-					cardId: data.cardId,
-					addAmount: Math.abs(data.amount),
-				});
-				if (!limitCheck.ok) {
-					return {
-						success: false,
-						error: limitCheck.error,
-					} as ActionResult<{ ids: string[] }>;
-				}
-			}
-		}
-
-		const inserted = await db
-			.insert(transactions)
-			.values(records)
-			.returning({ id: transactions.id });
-
-		if (data.importFromTransactionId && inserted.length > 0) {
-			await copyAttachmentsForImport({
-				sourceTransactionId: data.importFromTransactionId,
-				targetTransactionIds: inserted.map((r) => r.id),
-				targetUserId: user.id,
-			});
-		}
-
-		const notificationEntries = buildEntriesByPayer(
-			records.map((record) => ({
-				payerId: record.payerId ?? null,
-				name: record.name ?? null,
-				amount: record.amount ?? null,
-				transactionType: record.transactionType ?? null,
-				paymentMethod: record.paymentMethod ?? null,
-				condition: record.condition ?? null,
-				purchaseDate: record.purchaseDate ?? null,
-				period: record.period ?? null,
-				note: record.note ?? null,
-			})),
-		);
-
-		if (notificationEntries.size > 0) {
-			await sendPayerAutoEmails({
-				userLabel: resolveUserLabel(user),
-				action: "created",
-				entriesByPayer: notificationEntries,
-			});
-		}
-
-		revalidate(user.id);
-
-		return {
-			success: true,
-			message: "Lançamento criado com sucesso.",
-			data: { ids: inserted.map((r) => r.id) },
-		};
-	} catch (error) {
-		return handleActionError(error) as ActionResult<{ ids: string[] }>;
-	}
+	const user = await getUser();
+	return createTransactionForUser({
+		userId: user.id,
+		userLabel: resolveUserLabel(user),
+		input,
+	});
 }
 
 export async function updateTransactionAction(

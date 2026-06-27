@@ -20,6 +20,8 @@ export interface TransactionDialogProps {
 	defaultPeriod?: string;
 	defaultAccountId?: string | null;
 	defaultCardId?: string | null;
+	defaultCategoryId?: string | null;
+	defaultPartyId?: string | null;
 	defaultPaymentMethod?: string | null;
 	defaultPurchaseDate?: string | null;
 	defaultName?: string | null;
