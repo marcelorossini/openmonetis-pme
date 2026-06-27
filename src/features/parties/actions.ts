@@ -58,27 +58,34 @@ const revalidate = (userId: string) => revalidateForEntity("parties", userId);
 
 export async function createPartyAction(
 	input: CreateInput,
-): Promise<ActionResult> {
+): Promise<ActionResult<{ id: string }>> {
 	try {
 		const user = await getUser();
 		const data = createSchema.parse(input);
 
-		await db.insert(parties).values({
-			kind: data.kind,
-			name: data.name,
-			document: data.document,
-			email: data.email,
-			phone: data.phone,
-			status: data.status,
-			note: data.note,
-			userId: user.id,
-		});
+		const [created] = await db
+			.insert(parties)
+			.values({
+				kind: data.kind,
+				name: data.name,
+				document: data.document,
+				email: data.email,
+				phone: data.phone,
+				status: data.status,
+				note: data.note,
+				userId: user.id,
+			})
+			.returning({ id: parties.id });
 
 		revalidate(user.id);
 
-		return { success: true, message: "Cadastro criado com sucesso." };
+		return {
+			success: true,
+			message: "Cadastro criado com sucesso.",
+			data: created ? { id: created.id } : undefined,
+		};
 	} catch (error) {
-		return handleActionError(error);
+		return handleActionError(error) as ActionResult<{ id: string }>;
 	}
 }
 

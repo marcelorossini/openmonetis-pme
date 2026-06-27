@@ -561,6 +561,7 @@ export const inboxItems = pgTable(
 			onDelete: "set null",
 			onUpdate: "cascade",
 		}),
+		accountExternalKey: text("account_external_key"),
 		cardId: uuid("cartao_id").references(() => cards.id, {
 			onDelete: "set null",
 			onUpdate: "cascade",
@@ -1149,6 +1150,40 @@ export const integrationPartyMappings = pgTable(
 	}),
 );
 
+export const integrationAccountMappings = pgTable(
+	"integration_account_mappings",
+	{
+		userId: text("user_id")
+			.notNull()
+			.references(() => user.id, { onDelete: "cascade" }),
+		sourceApp: text("source_app").notNull(),
+		profileKey: text("profile_key").notNull().default(""),
+		externalKey: text("external_key").notNull(),
+		accountId: uuid("account_id")
+			.notNull()
+			.references(() => financialAccounts.id, { onDelete: "cascade" }),
+		createdAt: timestamp("created_at", { mode: "date", withTimezone: true })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp("updated_at", { mode: "date", withTimezone: true })
+			.notNull()
+			.defaultNow(),
+	},
+	(table) => ({
+		pk: primaryKey({
+			columns: [
+				table.userId,
+				table.sourceApp,
+				table.profileKey,
+				table.externalKey,
+			],
+		}),
+		accountIdIdx: index("integration_account_mappings_account_id_idx").on(
+			table.accountId,
+		),
+	}),
+);
+
 export const integrationCategoryMappings = pgTable(
 	"integration_category_mappings",
 	{
@@ -1227,6 +1262,8 @@ export type NewApiToken = typeof apiTokens.$inferInsert;
 export type InboxItem = typeof inboxItems.$inferSelect;
 export type NewInboxItem = typeof inboxItems.$inferInsert;
 export type ImportCategoryMapping = typeof importCategoryMappings.$inferSelect;
+export type IntegrationAccountMapping =
+	typeof integrationAccountMappings.$inferSelect;
 export type IntegrationPartyMapping =
 	typeof integrationPartyMappings.$inferSelect;
 export type IntegrationCategoryMapping =

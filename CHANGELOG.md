@@ -18,6 +18,7 @@ Esta próxima versão amplia o vínculo de lançamentos com contatos externos: c
 
 ### Alterado
 - Clientes: a rota antiga `/clients` redireciona para `/parties`.
+- Integrações: contas passam a participar do mapeamento da inbox e cada cadastro de conta, categoria e cliente/fornecedor agora oferece um atalho direto para gerenciar seus vínculos em `Ajustes > Integrações`.
 
 ## [2.7.9] - 2026-06-21
 

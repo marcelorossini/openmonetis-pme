@@ -51,24 +51,31 @@ type CategoryDeleteInput = z.infer<typeof deleteCategorySchema>;
 
 export async function createCategoryAction(
 	input: CategoryCreateInput,
-): Promise<ActionResult> {
+): Promise<ActionResult<{ id: string }>> {
 	try {
 		const user = await getUser();
 		const data = createCategorySchema.parse(input);
 
-		await db.insert(categories).values({
-			name: data.name,
-			type: data.type,
-			icon: data.icon,
-			partyKind: data.partyKind,
-			userId: user.id,
-		});
+		const [created] = await db
+			.insert(categories)
+			.values({
+				name: data.name,
+				type: data.type,
+				icon: data.icon,
+				partyKind: data.partyKind,
+				userId: user.id,
+			})
+			.returning({ id: categories.id });
 
 		revalidateForEntity("categories", user.id);
 
-		return { success: true, message: "Category criada com sucesso." };
+		return {
+			success: true,
+			message: "Category criada com sucesso.",
+			data: created ? { id: created.id } : undefined,
+		};
 	} catch (error) {
-		return handleActionError(error);
+		return handleActionError(error) as ActionResult<{ id: string }>;
 	}
 }
 

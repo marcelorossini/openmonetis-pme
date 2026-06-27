@@ -23,8 +23,24 @@ import {
 } from "@/shared/components/ui/tabs";
 import { auth } from "@/shared/lib/auth/config";
 import { fetchAppBrandingSettings } from "@/shared/lib/branding/queries";
+import type { IntegrationEntityType } from "@/shared/lib/inbox-integrations/types";
 
-export default async function Page() {
+type PageSearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+type PageProps = {
+	searchParams?: PageSearchParams;
+};
+
+const getSingleParam = (
+	params: Record<string, string | string[] | undefined> | undefined,
+	key: string,
+) => {
+	const value = params?.[key];
+	if (!value) return null;
+	return Array.isArray(value) ? (value[0] ?? null) : value;
+};
+
+export default async function Page({ searchParams }: PageProps) {
 	await connection();
 	const session = await auth.api.getSession({
 		headers: await headers(),
@@ -36,6 +52,24 @@ export default async function Page() {
 
 	const userName = session.user.name || "";
 	const userEmail = session.user.email || "";
+	const resolvedSearchParams = searchParams ? await searchParams : undefined;
+	const activeTab =
+		getSingleParam(resolvedSearchParams, "tab") ?? "preferencias";
+	const rawFocusEntityType = getSingleParam(resolvedSearchParams, "entityType");
+	const focusEntityType =
+		rawFocusEntityType === "account" ||
+		rawFocusEntityType === "party" ||
+		rawFocusEntityType === "category"
+			? (rawFocusEntityType as IntegrationEntityType)
+			: null;
+	const focusEntityId = getSingleParam(resolvedSearchParams, "entityId");
+	const focusEntity =
+		focusEntityType && focusEntityId
+			? {
+					entityType: focusEntityType,
+					entityId: focusEntityId,
+				}
+			: null;
 
 	const [
 		{
@@ -54,7 +88,7 @@ export default async function Page() {
 
 	return (
 		<div className="w-full">
-			<Tabs defaultValue="preferencias" className="w-full">
+			<Tabs defaultValue={activeTab} className="w-full">
 				{/* No mobile: rolagem horizontal + seta indicando mais opções à direita */}
 				<div className="relative -mx-6 px-6 md:mx-0 md:px-0">
 					<div className="overflow-x-auto overflow-y-hidden scroll-smooth md:overflow-visible [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -157,16 +191,18 @@ export default async function Page() {
 							<div>
 								<h2 className="text-xl font-semibold mb-1">Integrações</h2>
 								<p className="text-sm text-muted-foreground">
-									Mapeie valores externos recebidos pela inbox para categorias e
-									clientes/fornecedores locais.
+									Mapeie valores externos recebidos pela inbox para contas,
+									categorias e clientes/fornecedores locais.
 								</p>
 							</div>
 							<Separator />
 							<IntegrationsTab
 								pendingMappings={integrationPendingMappings}
 								savedMappings={integrationSavedMappings}
+								accountOptions={integrationTargetOptions.accountOptions}
 								partyOptions={integrationTargetOptions.partyOptions}
 								categoryOptions={integrationTargetOptions.categoryOptions}
+								focusEntity={focusEntity}
 							/>
 						</div>
 					</Card>

@@ -3,6 +3,7 @@
 import {
 	RiAddLine,
 	RiArrowRightLine,
+	RiBankLine,
 	RiDeleteBinLine,
 	RiLinkM,
 	RiPriceTag3Line,
@@ -49,12 +50,14 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/shared/components/ui/select";
+import type {
+	IntegrationEntityType,
+	IntegrationFocusContext,
+} from "@/shared/lib/inbox-integrations/types";
 import { formatDateTime } from "@/shared/utils/date";
 
-type EntityType = "party" | "category";
-
 type MappingFormState = {
-	entityType: EntityType;
+	entityType: IntegrationEntityType;
 	sourceApp: string;
 	profileKey: string;
 	externalKey: string;
@@ -62,12 +65,16 @@ type MappingFormState = {
 };
 
 const EMPTY_FILTER = "__all";
+const EMPTY_PROFILE_FILTER = "__all_profiles";
+const NO_PROFILE_FILTER = "__no_profile";
 
-function getEntityLabel(entityType: EntityType) {
+function getEntityLabel(entityType: IntegrationEntityType) {
+	if (entityType === "account") return "Conta";
 	return entityType === "party" ? "Cliente/Fornecedor" : "Categoria";
 }
 
-function getEntityIcon(entityType: EntityType) {
+function getEntityIcon(entityType: IntegrationEntityType) {
+	if (entityType === "account") return RiBankLine;
 	return entityType === "party" ? RiUserStarLine : RiPriceTag3Line;
 }
 
@@ -84,15 +91,19 @@ function buildInitialFormState(): MappingFormState {
 interface IntegrationsTabProps {
 	pendingMappings: IntegrationPendingMappingItem[];
 	savedMappings: IntegrationSavedMappingItem[];
+	accountOptions: IntegrationTargetOption[];
 	partyOptions: IntegrationTargetOption[];
 	categoryOptions: IntegrationTargetOption[];
+	focusEntity?: IntegrationFocusContext | null;
 }
 
 export function IntegrationsTab({
 	pendingMappings,
 	savedMappings,
+	accountOptions,
 	partyOptions,
 	categoryOptions,
+	focusEntity,
 }: IntegrationsTabProps) {
 	const router = useRouter();
 	const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -100,8 +111,12 @@ export function IntegrationsTab({
 	const [formState, setFormState] = useState<MappingFormState>(
 		buildInitialFormState(),
 	);
-	const [entityFilter, setEntityFilter] = useState<string>(EMPTY_FILTER);
+	const [entityFilter, setEntityFilter] = useState<string>(
+		focusEntity?.entityType ?? EMPTY_FILTER,
+	);
 	const [sourceFilter, setSourceFilter] = useState<string>(EMPTY_FILTER);
+	const [profileFilter, setProfileFilter] =
+		useState<string>(EMPTY_PROFILE_FILTER);
 	const [searchFilter, setSearchFilter] = useState("");
 	const [deleteTarget, setDeleteTarget] =
 		useState<IntegrationSavedMappingItem | null>(null);
@@ -110,8 +125,22 @@ export function IntegrationsTab({
 		return [...new Set(savedMappings.map((item) => item.sourceApp))].sort();
 	}, [savedMappings]);
 
+	const profileOptions = useMemo(() => {
+		return [
+			...new Set(savedMappings.map((item) => item.profileKey ?? "")),
+		].sort();
+	}, [savedMappings]);
+
 	const filteredSavedMappings = useMemo(() => {
 		return savedMappings.filter((item) => {
+			if (
+				focusEntity &&
+				(item.entityType !== focusEntity.entityType ||
+					item.targetId !== focusEntity.entityId)
+			) {
+				return false;
+			}
+
 			if (entityFilter !== EMPTY_FILTER && item.entityType !== entityFilter) {
 				return false;
 			}
@@ -120,21 +149,74 @@ export function IntegrationsTab({
 				return false;
 			}
 
+			if (
+				profileFilter !== EMPTY_PROFILE_FILTER &&
+				(profileFilter === NO_PROFILE_FILTER
+					? (item.profileKey ?? "") !== ""
+					: (item.profileKey ?? "") !== profileFilter)
+			) {
+				return false;
+			}
+
 			if (!searchFilter.trim()) return true;
 
 			const needle = searchFilter.trim().toLowerCase();
 			return (
 				item.externalKey.toLowerCase().includes(needle) ||
-				item.targetLabel.toLowerCase().includes(needle)
+				item.targetLabel.toLowerCase().includes(needle) ||
+				item.sourceApp.toLowerCase().includes(needle)
 			);
 		});
-	}, [savedMappings, entityFilter, sourceFilter, searchFilter]);
+	}, [
+		savedMappings,
+		focusEntity,
+		entityFilter,
+		sourceFilter,
+		profileFilter,
+		searchFilter,
+	]);
+
+	const filteredPendingMappings = useMemo(() => {
+		return pendingMappings.filter((item) => {
+			if (focusEntity && item.entityType !== focusEntity.entityType) {
+				return false;
+			}
+			return true;
+		});
+	}, [pendingMappings, focusEntity]);
+
+	const focusEntityLabel = useMemo(() => {
+		if (!focusEntity) return null;
+		const optionList =
+			focusEntity.entityType === "account"
+				? accountOptions
+				: focusEntity.entityType === "party"
+					? partyOptions
+					: categoryOptions;
+		return (
+			focusEntity.entityLabel ??
+			optionList.find((item) => item.value === focusEntity.entityId)?.label ??
+			null
+		);
+	}, [focusEntity, accountOptions, partyOptions, categoryOptions]);
 
 	const targetOptions =
-		formState.entityType === "party" ? partyOptions : categoryOptions;
+		formState.entityType === "account"
+			? accountOptions
+			: formState.entityType === "party"
+				? partyOptions
+				: categoryOptions;
 
 	const openCreateDialog = () => {
-		setFormState(buildInitialFormState());
+		setFormState(
+			focusEntity
+				? {
+						...buildInitialFormState(),
+						entityType: focusEntity.entityType,
+						targetId: focusEntity.entityId,
+					}
+				: buildInitialFormState(),
+		);
 		setIsDialogOpen(true);
 	};
 
@@ -151,11 +233,12 @@ export function IntegrationsTab({
 
 	const openPendingDialog = (item: IntegrationPendingMappingItem) => {
 		setFormState({
-			entityType: item.entityType,
+			entityType: focusEntity?.entityType ?? item.entityType,
 			sourceApp: item.sourceApp,
 			profileKey: item.profileKey ?? "",
 			externalKey: item.externalKey,
-			targetId: "",
+			targetId:
+				focusEntity?.entityType === item.entityType ? focusEntity.entityId : "",
 		});
 		setIsDialogOpen(true);
 	};
@@ -199,6 +282,23 @@ export function IntegrationsTab({
 
 	return (
 		<div className="space-y-8">
+			{focusEntity ? (
+				<section className="rounded-md border bg-muted/20 px-4 py-4">
+					<div className="flex flex-wrap items-center gap-2">
+						<Badge variant="outline">
+							{getEntityLabel(focusEntity.entityType)}
+						</Badge>
+						{focusEntityLabel ? (
+							<span className="font-medium">{focusEntityLabel}</span>
+						) : null}
+					</div>
+					<p className="mt-2 text-sm text-muted-foreground">
+						Gerencie os vínculos desta entidade sem sair do contexto do
+						cadastro.
+					</p>
+				</section>
+			) : null}
+
 			<section className="space-y-4">
 				<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
 					<div>
@@ -215,12 +315,12 @@ export function IntegrationsTab({
 				</div>
 
 				<div className="space-y-3">
-					{pendingMappings.length === 0 ? (
+					{filteredPendingMappings.length === 0 ? (
 						<div className="rounded-md border border-dashed px-4 py-6 text-sm text-muted-foreground">
 							Nenhum valor pendente de mapeamento.
 						</div>
 					) : (
-						pendingMappings.map((item) => {
+						filteredPendingMappings.map((item) => {
 							const EntityIcon = getEntityIcon(item.entityType);
 
 							return (
@@ -240,9 +340,9 @@ export function IntegrationsTab({
 												{getEntityLabel(item.entityType)}
 											</Badge>
 											<Badge variant="secondary">{item.sourceApp}</Badge>
-											{item.profileKey ? (
-												<Badge variant="secondary">{item.profileKey}</Badge>
-											) : null}
+											<Badge variant="secondary">
+												{item.profileKey || "Sem perfil"}
+											</Badge>
 											<Badge variant="outline">
 												{item.pendingCount} pendente(s)
 											</Badge>
@@ -277,15 +377,20 @@ export function IntegrationsTab({
 					</p>
 				</div>
 
-				<div className="grid gap-3 md:grid-cols-[180px_220px_minmax(0,1fr)]">
+				<div className="grid gap-3 md:grid-cols-[180px_180px_180px_minmax(0,1fr)]">
 					<div className="space-y-2">
 						<Label>Entidade</Label>
-						<Select value={entityFilter} onValueChange={setEntityFilter}>
+						<Select
+							value={entityFilter}
+							onValueChange={setEntityFilter}
+							disabled={Boolean(focusEntity)}
+						>
 							<SelectTrigger>
 								<SelectValue placeholder="Todas" />
 							</SelectTrigger>
 							<SelectContent>
 								<SelectItem value={EMPTY_FILTER}>Todas</SelectItem>
+								<SelectItem value="account">Conta</SelectItem>
 								<SelectItem value="party">Cliente/Fornecedor</SelectItem>
 								<SelectItem value="category">Categoria</SelectItem>
 							</SelectContent>
@@ -303,6 +408,26 @@ export function IntegrationsTab({
 								{sourceOptions.map((item) => (
 									<SelectItem key={item} value={item}>
 										{item}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+					</div>
+
+					<div className="space-y-2">
+						<Label>Perfil</Label>
+						<Select value={profileFilter} onValueChange={setProfileFilter}>
+							<SelectTrigger>
+								<SelectValue placeholder="Todos" />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value={EMPTY_PROFILE_FILTER}>Todos</SelectItem>
+								{profileOptions.map((item) => (
+									<SelectItem
+										key={item || "__empty"}
+										value={item || NO_PROFILE_FILTER}
+									>
+										{item || "Sem perfil"}
 									</SelectItem>
 								))}
 							</SelectContent>
@@ -345,9 +470,9 @@ export function IntegrationsTab({
 												{getEntityLabel(item.entityType)}
 											</Badge>
 											<Badge variant="secondary">{item.sourceApp}</Badge>
-											{item.profileKey ? (
-												<Badge variant="secondary">{item.profileKey}</Badge>
-											) : null}
+											<Badge variant="secondary">
+												{item.profileKey || "Sem perfil"}
+											</Badge>
 										</div>
 
 										<div className="grid gap-3 text-sm md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:items-center">
@@ -423,15 +548,17 @@ export function IntegrationsTab({
 								onValueChange={(value) =>
 									setFormState((current) => ({
 										...current,
-										entityType: value as EntityType,
+										entityType: value as IntegrationEntityType,
 										targetId: "",
 									}))
 								}
+								disabled={Boolean(focusEntity)}
 							>
 								<SelectTrigger>
 									<SelectValue />
 								</SelectTrigger>
 								<SelectContent>
+									<SelectItem value="account">Conta</SelectItem>
 									<SelectItem value="party">Cliente/Fornecedor</SelectItem>
 									<SelectItem value="category">Categoria</SelectItem>
 								</SelectContent>
@@ -453,7 +580,7 @@ export function IntegrationsTab({
 						</div>
 
 						<div className="space-y-2">
-							<Label>Perfil</Label>
+							<Label>Perfil da integração (opcional)</Label>
 							<Input
 								value={formState.profileKey}
 								onChange={(event) =>
@@ -490,6 +617,7 @@ export function IntegrationsTab({
 										targetId: value,
 									}))
 								}
+								disabled={Boolean(focusEntity)}
 							>
 								<SelectTrigger>
 									<SelectValue placeholder="Selecione o destino" />

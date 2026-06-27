@@ -267,6 +267,13 @@
 			"when": 1782494000000,
 			"tag": "0038_create_integration_mappings",
 			"breakpoints": true
+		},
+		{
+			"idx": 39,
+			"version": "7",
+			"when": 1782502000000,
+			"tag": "0039_add_account_integration_mappings",
+			"breakpoints": true
 		}
 	]
 }

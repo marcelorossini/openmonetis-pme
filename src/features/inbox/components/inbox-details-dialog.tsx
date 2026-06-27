@@ -121,6 +121,16 @@ export function InboxDetailsDialog({
 									<span>{item.paymentMethod}</span>
 								</div>
 							)}
+							{item.accountExternalKey && (
+								<div className="flex justify-between gap-4">
+									<span className="text-muted-foreground">
+										Valor externo conta
+									</span>
+									<span className="break-all text-right">
+										{item.accountExternalKey}
+									</span>
+								</div>
+							)}
 							{item.partyExternalKey && (
 								<div className="flex justify-between gap-4">
 									<span className="text-muted-foreground">

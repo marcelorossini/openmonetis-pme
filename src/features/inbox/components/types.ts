@@ -16,6 +16,7 @@ export interface InboxItem {
 	transactionType: string | null;
 	paymentMethod: string | null;
 	accountId: string | null;
+	accountExternalKey: string | null;
 	cardId: string | null;
 	categoryId: string | null;
 	categoryExternalKey: string | null;

@@ -1,5 +1,7 @@
 "use client";
 
+import { RiLinkM } from "@remixicon/react";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 import {
@@ -38,6 +40,7 @@ import {
 	CATEGORY_PARTY_KIND_LABEL,
 	type CategoryPartyKind,
 } from "@/shared/lib/categories/party-kind";
+import { buildIntegrationsSettingsHref } from "@/shared/lib/inbox-integrations/types";
 
 interface PartyDialogProps {
 	mode: "create" | "update";
@@ -64,6 +67,7 @@ export function PartyDialog({
 	open,
 	onOpenChange,
 }: PartyDialogProps) {
+	const router = useRouter();
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 	const [isPending, startTransition] = useTransition();
 	const [dialogOpen, setDialogOpen] = useControlledState(
@@ -111,7 +115,23 @@ export function PartyDialog({
 					: await updatePartyAction({ id: party?.id ?? "", ...payload });
 
 			if (result.success) {
-				toast.success(result.message);
+				const createdId = result.data?.id;
+				toast.success(result.message, {
+					action:
+						mode === "create" && createdId
+							? {
+									label: "Integrações",
+									onClick: () =>
+										router.push(
+											buildIntegrationsSettingsHref({
+												entityType: "party",
+												entityId: createdId,
+												entityLabel: payload.name,
+											}),
+										),
+								}
+							: undefined,
+				});
 				setDialogOpen(false);
 				resetForm(initialState);
 				return;
@@ -131,6 +151,13 @@ export function PartyDialog({
 			? "Cadastre clientes e fornecedores para vincular aos lançamentos conforme a categoria."
 			: "Atualize os detalhes do cadastro selecionado.";
 	const submitLabel = mode === "create" ? "Salvar" : "Atualizar";
+	const integrationsHref = party
+		? buildIntegrationsSettingsHref({
+				entityType: "party",
+				entityId: party.id,
+				entityLabel: party.name,
+			})
+		: null;
 
 	return (
 		<Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -256,6 +283,17 @@ export function PartyDialog({
 						>
 							Cancelar
 						</Button>
+						{mode === "update" && integrationsHref ? (
+							<Button
+								type="button"
+								variant="outline"
+								onClick={() => router.push(integrationsHref)}
+								disabled={isPending}
+							>
+								<RiLinkM className="size-4" />
+								Integrações
+							</Button>
+						) : null}
 						<Button type="submit" disabled={isPending}>
 							{isPending ? "Salvando..." : submitLabel}
 						</Button>

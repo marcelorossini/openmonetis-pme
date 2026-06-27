@@ -19,6 +19,7 @@ const expanded = inboxItemSchema.parse({
 	paymentMethod: "Pix",
 	profileKey: "inter-webhook",
 	accountId: "11111111-1111-4111-8111-111111111111",
+	accountExternalKey: "conta:asaas",
 	categoryId: "22222222-2222-4222-8222-222222222222",
 	categoryExternalKey: "categoria:servicos-prestados",
 	payerId: "33333333-3333-4333-8333-333333333333",
@@ -32,6 +33,7 @@ assert.equal(expanded.transactionType, "Despesa");
 assert.equal(expanded.paymentMethod, "Pix");
 assert.equal(expanded.profileKey, "inter-webhook");
 assert.equal(expanded.accountId, "11111111-1111-4111-8111-111111111111");
+assert.equal(expanded.accountExternalKey, "conta:asaas");
 assert.equal(expanded.categoryExternalKey, "categoria:servicos-prestados");
 assert.equal(expanded.partyExternalKey, "pix:cnpj:12345678000199");
 assert.equal(expanded.cardId, null);

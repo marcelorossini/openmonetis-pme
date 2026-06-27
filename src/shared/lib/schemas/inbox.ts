@@ -43,6 +43,7 @@ export const inboxItemSchema = z.object({
 		})
 		.optional(),
 	accountId: optionalUuidSchema,
+	accountExternalKey: z.string().max(255).optional(),
 	cardId: optionalUuidSchema,
 	categoryId: optionalUuidSchema,
 	categoryExternalKey: z.string().max(255).optional(),

@@ -2,7 +2,9 @@ import { and, asc, desc, eq } from "drizzle-orm";
 import {
 	apiTokens,
 	categories,
+	financialAccounts,
 	inboxItems,
+	integrationAccountMappings,
 	integrationCategoryMappings,
 	integrationPartyMappings,
 	parties,
@@ -28,7 +30,7 @@ interface ApiToken {
 }
 
 export interface IntegrationPendingMappingItem {
-	entityType: "party" | "category";
+	entityType: "account" | "party" | "category";
 	sourceApp: string;
 	sourceAppName: string | null;
 	profileKey: string | null;
@@ -38,7 +40,7 @@ export interface IntegrationPendingMappingItem {
 }
 
 export interface IntegrationSavedMappingItem {
-	entityType: "party" | "category";
+	entityType: "account" | "party" | "category";
 	sourceApp: string;
 	profileKey: string | null;
 	externalKey: string;
@@ -105,6 +107,8 @@ async function fetchIntegrationPendingMappings(
 			sourceApp: inboxItems.sourceApp,
 			sourceAppName: inboxItems.sourceAppName,
 			profileKey: inboxItems.profileKey,
+			accountExternalKey: inboxItems.accountExternalKey,
+			accountId: inboxItems.accountId,
 			partyExternalKey: inboxItems.partyExternalKey,
 			partyId: inboxItems.partyId,
 			categoryExternalKey: inboxItems.categoryExternalKey,
@@ -119,6 +123,33 @@ async function fetchIntegrationPendingMappings(
 	const grouped = new Map<string, IntegrationPendingMappingItem>();
 
 	for (const row of rows) {
+		if (row.accountExternalKey && !row.accountId) {
+			const key = [
+				"account",
+				row.sourceApp,
+				row.profileKey ?? "",
+				row.accountExternalKey,
+			].join("::");
+			const existing = grouped.get(key);
+
+			if (existing) {
+				existing.pendingCount += 1;
+				if (row.notificationTimestamp > existing.lastReceivedAt) {
+					existing.lastReceivedAt = row.notificationTimestamp;
+				}
+			} else {
+				grouped.set(key, {
+					entityType: "account",
+					sourceApp: row.sourceApp,
+					sourceAppName: row.sourceAppName,
+					profileKey: row.profileKey,
+					externalKey: row.accountExternalKey,
+					pendingCount: 1,
+					lastReceivedAt: row.notificationTimestamp,
+				});
+			}
+		}
+
 		if (row.partyExternalKey && !row.partyId) {
 			const key = [
 				"party",
@@ -182,7 +213,27 @@ async function fetchIntegrationPendingMappings(
 async function fetchIntegrationSavedMappings(
 	userId: string,
 ): Promise<IntegrationSavedMappingItem[]> {
-	const [partyMappings, categoryMappings] = await Promise.all([
+	const [accountMappings, partyMappings, categoryMappings] = await Promise.all([
+		db
+			.select({
+				sourceApp: integrationAccountMappings.sourceApp,
+				profileKey: integrationAccountMappings.profileKey,
+				externalKey: integrationAccountMappings.externalKey,
+				targetId: integrationAccountMappings.accountId,
+				targetLabel: financialAccounts.name,
+				targetMeta: financialAccounts.accountType,
+				updatedAt: integrationAccountMappings.updatedAt,
+			})
+			.from(integrationAccountMappings)
+			.innerJoin(
+				financialAccounts,
+				eq(financialAccounts.id, integrationAccountMappings.accountId),
+			)
+			.where(eq(integrationAccountMappings.userId, userId))
+			.orderBy(
+				asc(integrationAccountMappings.sourceApp),
+				asc(integrationAccountMappings.externalKey),
+			),
 		db
 			.select({
 				sourceApp: integrationPartyMappings.sourceApp,
@@ -223,6 +274,11 @@ async function fetchIntegrationSavedMappings(
 	]);
 
 	return [
+		...accountMappings.map((item) => ({
+			...item,
+			entityType: "account" as const,
+			profileKey: item.profileKey || null,
+		})),
 		...partyMappings.map((item) => ({
 			...item,
 			entityType: "party" as const,
@@ -237,10 +293,20 @@ async function fetchIntegrationSavedMappings(
 }
 
 async function fetchIntegrationTargetOptions(userId: string): Promise<{
+	accountOptions: IntegrationTargetOption[];
 	partyOptions: IntegrationTargetOption[];
 	categoryOptions: IntegrationTargetOption[];
 }> {
-	const [partyRows, categoryRows] = await Promise.all([
+	const [accountRows, partyRows, categoryRows] = await Promise.all([
+		db
+			.select({
+				value: financialAccounts.id,
+				label: financialAccounts.name,
+				meta: financialAccounts.accountType,
+			})
+			.from(financialAccounts)
+			.where(eq(financialAccounts.userId, userId))
+			.orderBy(asc(financialAccounts.name)),
 		db
 			.select({
 				value: parties.id,
@@ -262,6 +328,7 @@ async function fetchIntegrationTargetOptions(userId: string): Promise<{
 	]);
 
 	return {
+		accountOptions: accountRows,
 		partyOptions: partyRows,
 		categoryOptions: categoryRows,
 	};

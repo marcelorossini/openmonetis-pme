@@ -2,6 +2,7 @@ import { and, eq } from "drizzle-orm";
 import type { z } from "zod";
 import {
 	inboxItems,
+	integrationAccountMappings,
 	integrationCategoryMappings,
 	integrationPartyMappings,
 } from "@/db/schema";
@@ -53,6 +54,7 @@ export async function processInboxApiItem({
 	}
 
 	const resolvedMappings = await resolveInboxMappingIdsForUser(userId, data);
+	const resolvedAccountId = data.accountId ?? resolvedMappings.accountId;
 	const resolvedCategoryId = data.categoryId ?? resolvedMappings.categoryId;
 	const resolvedPartyId = data.partyId ?? resolvedMappings.partyId;
 
@@ -73,7 +75,8 @@ export async function processInboxApiItem({
 				: null,
 			transactionType: data.transactionType ?? null,
 			paymentMethod: data.paymentMethod ?? null,
-			accountId: data.accountId,
+			accountId: resolvedAccountId,
+			accountExternalKey: normalizeOptionalText(data.accountExternalKey),
 			cardId: data.cardId,
 			categoryId: resolvedCategoryId,
 			categoryExternalKey: normalizeOptionalText(data.categoryExternalKey),
@@ -145,13 +148,19 @@ export async function reprocessPendingInboxItem({
 	}
 
 	const resolvedMappings = await resolveInboxMappingIdsForUser(userId, item);
+	const nextAccountId = item.accountId ?? resolvedMappings.accountId;
 	const nextCategoryId = item.categoryId ?? resolvedMappings.categoryId;
 	const nextPartyId = item.partyId ?? resolvedMappings.partyId;
 
-	if (nextCategoryId !== item.categoryId || nextPartyId !== item.partyId) {
+	if (
+		nextAccountId !== item.accountId ||
+		nextCategoryId !== item.categoryId ||
+		nextPartyId !== item.partyId
+	) {
 		await db
 			.update(inboxItems)
 			.set({
+				accountId: nextAccountId,
 				categoryId: nextCategoryId,
 				partyId: nextPartyId,
 				updatedAt: new Date(),
@@ -161,6 +170,7 @@ export async function reprocessPendingInboxItem({
 
 	const refreshedItem: PersistedInboxItem = {
 		...item,
+		accountId: nextAccountId,
 		categoryId: nextCategoryId,
 		partyId: nextPartyId,
 	};
@@ -254,21 +264,43 @@ export async function resolveInboxMappingIdsForUser(
 	item: {
 		sourceApp: string;
 		profileKey?: string | null;
+		accountId?: string | null;
 		partyId?: string | null;
 		categoryId?: string | null;
+		accountExternalKey?: string | null;
 		partyExternalKey?: string | null;
 		categoryExternalKey?: string | null;
 	},
 ): Promise<{
+	accountId: string | null;
 	partyId: string | null;
 	categoryId: string | null;
 }> {
 	const profileKey = normalizeOptionalText(item.profileKey);
 	const profileScope = profileKey ?? "";
+	const accountExternalKey = normalizeOptionalText(item.accountExternalKey);
 	const partyExternalKey = normalizeOptionalText(item.partyExternalKey);
 	const categoryExternalKey = normalizeOptionalText(item.categoryExternalKey);
 
-	const [partyMappings, categoryMappings] = await Promise.all([
+	const [accountMappings, partyMappings, categoryMappings] = await Promise.all([
+		accountExternalKey
+			? db
+					.select({
+						sourceApp: integrationAccountMappings.sourceApp,
+						profileKey: integrationAccountMappings.profileKey,
+						externalKey: integrationAccountMappings.externalKey,
+						accountId: integrationAccountMappings.accountId,
+					})
+					.from(integrationAccountMappings)
+					.where(
+						and(
+							eq(integrationAccountMappings.userId, userId),
+							eq(integrationAccountMappings.sourceApp, item.sourceApp),
+							eq(integrationAccountMappings.externalKey, accountExternalKey),
+							eq(integrationAccountMappings.profileKey, profileScope),
+						),
+					)
+			: Promise.resolve([]),
 		partyExternalKey
 			? db
 					.select({
@@ -308,6 +340,7 @@ export async function resolveInboxMappingIdsForUser(
 	]);
 
 	return resolveInboxMappingIds(item, {
+		accounts: accountMappings,
 		parties: partyMappings,
 		categories: categoryMappings,
 	});
@@ -337,6 +370,10 @@ async function buildAutoImportInputFromInboxItem(
 	);
 	const isCreditCard = item.paymentMethod === "Cartão de crédito";
 
+	if (!isCreditCard && !item.accountId) {
+		return { ok: false, error: "Selecione uma conta." };
+	}
+
 	return {
 		ok: true,
 		input: {
@@ -362,9 +399,18 @@ async function buildAutoImportInputFromInboxItem(
 function getUnresolvedMappingError(
 	item: Pick<
 		PersistedInboxItem,
-		"partyId" | "partyExternalKey" | "categoryId" | "categoryExternalKey"
+		| "accountId"
+		| "accountExternalKey"
+		| "partyId"
+		| "partyExternalKey"
+		| "categoryId"
+		| "categoryExternalKey"
 	>,
 ): string | null {
+	if (item.accountExternalKey && !item.accountId) {
+		return "Mapeamento de conta pendente.";
+	}
+
 	if (item.partyExternalKey && !item.partyId) {
 		return "Mapeamento de cliente/fornecedor pendente.";
 	}

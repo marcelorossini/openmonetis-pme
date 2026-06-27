@@ -90,7 +90,7 @@ const updateBrandingColorSchema = z.object({
 	primaryColorHex: z.string().nullable(),
 });
 
-const integrationEntitySchema = z.enum(["party", "category"]);
+const integrationEntitySchema = z.enum(["account", "party", "category"]);
 
 const saveIntegrationMappingSchema = z.object({
 	entityType: integrationEntitySchema,
@@ -971,7 +971,41 @@ export async function saveIntegrationMappingAction(
 		const externalKey = validated.externalKey.trim();
 		const now = new Date();
 
-		if (validated.entityType === "party") {
+		if (validated.entityType === "account") {
+			const existingAccount = await db.query.financialAccounts.findFirst({
+				where: and(
+					eq(schema.financialAccounts.id, validated.targetId),
+					eq(schema.financialAccounts.userId, user.id),
+				),
+			});
+
+			if (!existingAccount) {
+				return { success: false, error: "Conta não encontrada." };
+			}
+
+			await db
+				.insert(schema.integrationAccountMappings)
+				.values({
+					userId: user.id,
+					sourceApp: validated.sourceApp.trim(),
+					profileKey: profileScope,
+					externalKey,
+					accountId: validated.targetId,
+					updatedAt: now,
+				})
+				.onConflictDoUpdate({
+					target: [
+						schema.integrationAccountMappings.userId,
+						schema.integrationAccountMappings.sourceApp,
+						schema.integrationAccountMappings.profileKey,
+						schema.integrationAccountMappings.externalKey,
+					],
+					set: {
+						accountId: sql`excluded.account_id`,
+						updatedAt: sql`excluded.updated_at`,
+					},
+				});
+		} else if (validated.entityType === "party") {
 			const existingParty = await db.query.parties.findFirst({
 				where: and(
 					eq(schema.parties.id, validated.targetId),
@@ -1083,7 +1117,18 @@ export async function deleteIntegrationMappingAction(
 		const profileScope = normalizeOptionalText(validated.profileKey) ?? "";
 		const externalKey = validated.externalKey.trim();
 
-		if (validated.entityType === "party") {
+		if (validated.entityType === "account") {
+			await db
+				.delete(schema.integrationAccountMappings)
+				.where(
+					and(
+						eq(schema.integrationAccountMappings.userId, user.id),
+						eq(schema.integrationAccountMappings.sourceApp, sourceApp),
+						eq(schema.integrationAccountMappings.profileKey, profileScope),
+						eq(schema.integrationAccountMappings.externalKey, externalKey),
+					),
+				);
+		} else if (validated.entityType === "party") {
 			await db
 				.delete(schema.integrationPartyMappings)
 				.where(
@@ -1138,7 +1183,7 @@ async function syncPendingInboxItemsForMapping({
 	targetId,
 }: {
 	userId: string;
-	entityType: "party" | "category";
+	entityType: "account" | "party" | "category";
 	sourceApp: string;
 	profileKey: string;
 	externalKey: string;
@@ -1149,9 +1194,11 @@ async function syncPendingInboxItemsForMapping({
 			eq(schema.inboxItems.userId, userId),
 			eq(schema.inboxItems.status, "pending"),
 			eq(schema.inboxItems.sourceApp, sourceApp),
-			entityType === "party"
-				? eq(schema.inboxItems.partyExternalKey, externalKey)
-				: eq(schema.inboxItems.categoryExternalKey, externalKey),
+			entityType === "account"
+				? eq(schema.inboxItems.accountExternalKey, externalKey)
+				: entityType === "party"
+					? eq(schema.inboxItems.partyExternalKey, externalKey)
+					: eq(schema.inboxItems.categoryExternalKey, externalKey),
 			profileKey
 				? eq(schema.inboxItems.profileKey, profileKey)
 				: isNull(schema.inboxItems.profileKey),
@@ -1159,6 +1206,8 @@ async function syncPendingInboxItemsForMapping({
 	});
 
 	for (const item of pendingItems) {
+		const nextAccountId =
+			entityType === "account" ? (item.accountId ?? targetId) : item.accountId;
 		const nextPartyId =
 			entityType === "party" ? (item.partyId ?? targetId) : item.partyId;
 		const nextCategoryId =
@@ -1169,6 +1218,7 @@ async function syncPendingInboxItemsForMapping({
 		await db
 			.update(schema.inboxItems)
 			.set({
+				accountId: nextAccountId,
 				partyId: nextPartyId,
 				categoryId: nextCategoryId,
 				updatedAt: new Date(),
