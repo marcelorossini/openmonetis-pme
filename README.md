@@ -3,10 +3,10 @@
 </p>
 
 <p align="center">
-  OpenMonetis PE: fork não oficial do OpenMonetis para controle financeiro simples de pequenas empresas.
+  OpenMonetis PE: fork mantido por Marcelo Rossini para controle financeiro simples de pequenas empresas.
 </p>
 
-> **⚠️ Nota:** este fork adapta o OpenMonetis para pequenas empresas. O projeto original continua creditado ao autor Felipe Coutinho.
+> **⚠️ Nota:** o OpenMonetis original continua creditado a Felipe Coutinho. O fork `openmonetis-pe` passou a ser mantido e expandido por Marcelo Rossini.
 
 > **Não há versão online hospedada.** Você precisa clonar o repositório e rodar localmente ou no seu próprio servidor.
 
@@ -49,11 +49,24 @@
 
 ## 🎯 Sobre o Projeto
 
-**OpenMonetis PE** é um fork não oficial do OpenMonetis, adaptado para controle financeiro simples de pequenas empresas, com foco em contas a pagar, contas a receber, clientes, fornecedores e fluxo de caixa.
+**OpenMonetis PE** é um fork do OpenMonetis, mantido por **Marcelo Rossini**, adaptado para controle financeiro simples de pequenas empresas, com foco em contas a pagar, contas a receber, clientes, fornecedores e fluxo de caixa.
 
-Todos os créditos pelo projeto original vão para **Felipe Coutinho** ([`@felipegcoutinho`](https://github.com/felipegcoutinho)).
+O projeto original continua com crédito a **Felipe Coutinho** ([`@felipegcoutinho`](https://github.com/felipegcoutinho)). A continuidade do fork `openmonetis-pe`, seu reposicionamento para pequenas empresas e as expansões mais recentes estão sob manutenção de **Marcelo Rossini** ([`@marcelorossini`](https://github.com/marcelorossini)).
 
 O objetivo deste fork é manter uma ferramenta self-hosted para pequenos negócios que precisam acompanhar movimentações, compromissos financeiros e contatos comerciais sem depender de uma plataforma SaaS.
+
+### O que o Marcelo Rossini já expandiu no fork
+
+Desde que assumiu a condução do `openmonetis-pe`, o fork ganhou um direcionamento próprio para rotina financeira de pequenas empresas, com destaque para:
+
+- reposicionamento completo do projeto como **OpenMonetis PE**, incluindo README, Docker, setup, metadados e fluxo de releases
+- módulo de **clientes e fornecedores** com cadastro dedicado e vínculo por categoria
+- módulo de **A pagar/receber** com títulos recorrentes mensais, série aberta e manutenção automática
+- expansão da **API da inbox** com payload canônico, autoimportação e conciliação automática de títulos
+- área de **Integrações** para mapear contas, categorias e clientes/fornecedores por `sourceApp`, `profileKey` e chave externa
+- API pública autenticada por token para **cadastro de clientes e fornecedores** em `/api/parties`
+- catálogo público de endpoints com **Scalar** em `/api-docs` e spec em `/openapi.json`
+- melhorias contínuas em UI, relatórios, importação, preferências, anexos e fluxo operacional do fork
 
 > 💡 **Licença Não-Comercial:** Este projeto é gratuito para uso pessoal, mas não pode ser usado comercialmente. Veja mais detalhes na seção [Licença](#-licença).
 
@@ -95,7 +108,7 @@ Se a regra automática encontrar exatamente um título compatível, o título é
 
 Em `Ajustes > Integrações`, valores externos recebidos pela API podem ser mapeados para contas, categorias e clientes/fornecedores locais por origem e perfil. Isso cobre casos como conta vinda por alias, `partyId` chegando como CNPJ ou aliases de categoria vindos de webhook, e reprocessa automaticamente os pré-lançamentos pendentes quando o mapeamento é salvo. Os próprios cadastros de conta, categoria e cliente/fornecedor também oferecem um atalho direto para abrir essa área já filtrada pela entidade.
 
-Além da inbox, a API autenticada por Bearer token agora também expõe `/api/parties` para integrações que precisam gravar clientes e fornecedores diretamente no sistema principal. O recurso suporta listagem paginada, detalhe por ID, criação, atualização e inativação lógica. No `POST`, um bloco opcional `integration` com `sourceApp`, `profileKey` e `externalKey` permite reaproveitar o mapeamento já existente de clientes/fornecedores: se o vínculo já existir, o cadastro é atualizado no mesmo endpoint; se não existir, o OpenMonetis cria o cadastro e grava o binding.
+Além da inbox, a API autenticada por Bearer token agora também expõe `/api/parties` para integrações que precisam gravar clientes e fornecedores diretamente no sistema principal. O recurso suporta listagem paginada, detalhe por ID, criação, atualização e inativação lógica. No `POST`, um bloco opcional `integration` com `sourceApp`, `profileKey` e `externalKey` permite reaproveitar o mapeamento já existente de clientes/fornecedores: se o vínculo já existir, o cadastro é atualizado no mesmo endpoint; se não existir, o OpenMonetis cria o cadastro e grava o binding. A referência interativa dos endpoints públicos fica em `/api-docs`, com o spec OpenAPI servido em `/openapi.json`.
 
 Para detalhes do fluxo, veja:
 
@@ -715,12 +728,14 @@ Para o texto legal completo, consulte o arquivo [LICENSE](LICENSE) ou visite [cr
 
 ---
 
-**Desenvolvido por:** Felipe Coutinho — [@felipegcoutinho](https://github.com/felipegcoutinho)
+**Projeto original:** Felipe Coutinho — [@felipegcoutinho](https://github.com/felipegcoutinho)
+
+**Fork OpenMonetis PE e manutenção atual:** Marcelo Rossini — [@marcelorossini](https://github.com/marcelorossini)
 
 <div align="center">
 
 **⭐ Se este fork foi útil pra você:**
 
-Dê uma estrela · [Apoie o autor original](https://github.com/sponsors/felipegcoutinho) · Compartilhe
+Dê uma estrela · [Apoie o autor original](https://github.com/sponsors/felipegcoutinho) · Acompanhe o fork de Marcelo Rossini · Compartilhe
 
 </div>
