@@ -37,6 +37,7 @@ services:
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-}
       BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3000}
       BETTER_AUTH_TRUSTED_ORIGINS: ${BETTER_AUTH_TRUSTED_ORIGINS:-}
+      JOBS_SECRET: ${JOBS_SECRET:-}
     depends_on:
       db:
         condition: service_healthy
@@ -47,6 +48,36 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+
+  jobs:
+    image: node:22-alpine
+    container_name: openmonetis_pe_jobs
+    restart: unless-stopped
+    working_dir: /workspace
+    command:
+      - sh
+      - -c
+      - |
+        if [ -f /workspace/scripts/jobs-loop.sh ]; then
+          exec sh /workspace/scripts/jobs-loop.sh
+        fi
+        wget -q -O /tmp/jobs-loop.sh "$JOBS_SCRIPT_URL"
+        exec sh /tmp/jobs-loop.sh
+    volumes:
+      - ./:/workspace:ro
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      JOBS_API_BASE_URL: http://app:3000
+      JOBS_TARGET_PATH: /api/internal/jobs/recurring-financial-titles
+      JOBS_INTERVAL_SECONDS: ${JOBS_INTERVAL_SECONDS:-86400}
+      JOBS_RUN_ON_START: ${JOBS_RUN_ON_START:-true}
+      JOBS_SECRET: ${JOBS_SECRET:-}
+      JOBS_SCRIPT_URL: ${JOBS_SCRIPT_URL:-https://raw.githubusercontent.com/marcelorossini/openmonetis-pe/main/scripts/jobs-loop.sh}
+    depends_on:
+      app:
+        condition: service_healthy
 
 volumes:
   postgres_data:

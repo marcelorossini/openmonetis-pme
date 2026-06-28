@@ -3,6 +3,7 @@
 import { RiCalendarEventLine } from "@remixicon/react";
 import type { ReactNode } from "react";
 import { EVENT_TYPE_STYLES } from "@/features/calendar/components/day-cell";
+import { TitleStatusBadge } from "@/features/receivables-payables/components/title-status-badge";
 import MoneyValues from "@/shared/components/money-values";
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
@@ -184,11 +185,39 @@ const renderInstallment = (
 	);
 };
 
+const renderFinancialTitle = (
+	event: Extract<CalendarEvent, { type: "financial-title" }>,
+) => {
+	return (
+		<EventCard type="financial-title">
+			<div className="flex items-start justify-between gap-3">
+				<div className="flex flex-col gap-1">
+					<span className="text-sm font-medium leading-tight">
+						{event.title.name}
+					</span>
+					<div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+						<span>{event.title.partyName ?? "Sem vínculo"}</span>
+						<span>
+							{event.title.type === "payable" ? "A pagar" : "A receber"}
+						</span>
+					</div>
+					<TitleStatusBadge status={event.title.computedStatus} />
+				</div>
+				<MoneyValues
+					className="font-medium whitespace-nowrap"
+					amount={event.title.amount}
+				/>
+			</div>
+		</EventCard>
+	);
+};
+
 const SECTION_LABELS: Record<CalendarEvent["type"], string> = {
 	transaction: "Lançamentos",
 	installment: "Parcelas",
 	boleto: "Boletos",
 	card: "Faturas",
+	"financial-title": "A pagar/receber",
 };
 
 const renderEvent = (event: CalendarEvent) => {
@@ -201,6 +230,8 @@ const renderEvent = (event: CalendarEvent) => {
 			return renderBoleto(event);
 		case "card":
 			return renderCard(event);
+		case "financial-title":
+			return renderFinancialTitle(event);
 		default:
 			return null;
 	}
@@ -225,6 +256,9 @@ export function EventModal({ open, day, onClose, onCreate }: EventModalProps) {
 				installment: day.events.filter((e) => e.type === "installment"),
 				boleto: day.events.filter((e) => e.type === "boleto"),
 				card: day.events.filter((e) => e.type === "card"),
+				"financial-title": day.events.filter(
+					(e) => e.type === "financial-title",
+				),
 			}
 		: null;
 
@@ -242,7 +276,15 @@ export function EventModal({ open, day, onClose, onCreate }: EventModalProps) {
 
 				<div className="max-h-[380px] space-y-3 overflow-y-auto pr-2">
 					{hasEvents && grouped ? (
-						(["transaction", "installment", "boleto", "card"] as const)
+						(
+							[
+								"transaction",
+								"installment",
+								"boleto",
+								"card",
+								"financial-title",
+							] as const
+						)
 							.filter((type) => grouped[type].length > 0)
 							.map((type) => (
 								<div key={type} className="space-y-1.5">

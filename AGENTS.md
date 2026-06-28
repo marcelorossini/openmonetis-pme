@@ -20,6 +20,7 @@
 7. **Comunicacao**: responder em portugues clara e direta com o time.
 8. **Commit messages**: agrupar por natureza. em pt-br. seguindo o padrao do sistema.
 9. **README.md**: sempre que fizer alteracoes significativas, atualize o README.md.
+10. **Containers de dev**: quando o agente precisar iniciar ou reiniciar o app em container, deve seguir um padrao unico. O container de desenvolvimento precisa expor `127.0.0.1:3000:3000`, montar o projeto em `/app`, usar volume nomeado para `/app/node_modules` e outro para `/app/.next`, definir `working_dir=/app`, apontar `DATABASE_URL` para o Postgres acessivel pelo container e iniciar o servidor com `pnpm exec next dev --turbopack --hostname 0.0.0.0` como processo principal. Nao deixar container de dev em `sleep infinity` sem servidor ativo, nao subir sem porta publicada e sempre verificar com `docker ps`, `docker logs` e `curl http://127.0.0.1:3000/api/health` ou `curl http://127.0.0.1:3000`.
 
 ---
 

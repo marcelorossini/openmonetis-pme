@@ -12,6 +12,7 @@ import {
 	RiNumbersLine,
 	RiPieChartLine,
 	RiRefreshLine,
+	RiSecurePaymentLine,
 	RiStore3Line,
 	RiTodoLine,
 	RiWallet3Line,
@@ -22,6 +23,7 @@ import { AttachmentsWidget } from "@/features/dashboard/components/widgets/attac
 import { BillWidget } from "@/features/dashboard/components/widgets/bill-widget";
 import { CategoryTrendsWidget } from "@/features/dashboard/components/widgets/category-trends-widget";
 import { ExpensesByCategoryWidgetWithChart } from "@/features/dashboard/components/widgets/expenses-by-category-widget-with-chart";
+import { FinancialTitlesWidget } from "@/features/dashboard/components/widgets/financial-titles-widget";
 import { GoalsProgressWidget } from "@/features/dashboard/components/widgets/goals-progress-widget";
 import { InboxWidget } from "@/features/dashboard/components/widgets/inbox-widget";
 import { IncomeByCategoryWidgetWithChart } from "@/features/dashboard/components/widgets/income-by-category-widget-with-chart";
@@ -68,6 +70,18 @@ export type WidgetConfig = {
 };
 
 export const widgetsConfig: WidgetConfig[] = [
+	{
+		id: "financial-titles",
+		title: "A pagar/receber",
+		subtitle: "Compromissos financeiros pendentes",
+		icon: <RiSecurePaymentLine className="size-4" />,
+		component: ({ data, period }) => (
+			<FinancialTitlesWidget
+				snapshot={data.financialTitlesSnapshot}
+				period={period}
+			/>
+		),
+	},
 	{
 		id: "my-accounts",
 		title: "Minhas contas",

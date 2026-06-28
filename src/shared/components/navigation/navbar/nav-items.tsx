@@ -98,6 +98,14 @@ export const NAV_SECTIONS: NavSection[] = [
 				iconClass: "text-primary",
 				preservePeriod: true,
 			},
+			{
+				href: "/receivables-payables",
+				label: "A pagar/receber",
+				description: "Controle compromissos antes da baixa",
+				icon: <RiSecurePaymentLine className="size-4" />,
+				iconClass: "text-primary",
+				preservePeriod: true,
+			},
 		],
 	},
 	{

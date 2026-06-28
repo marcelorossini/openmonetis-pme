@@ -7,7 +7,7 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 
 ## [Não lançado]
 
-Esta próxima versão amplia o vínculo de lançamentos com contatos externos: categorias passam a definir quando pedem cliente ou fornecedor, a API do Companion ganha mais contexto para autoimportação e a nova área de integrações resolve valores externos sem depender de ajuste manual repetitivo na inbox.
+Esta próxima versão amplia o vínculo de lançamentos com contatos externos, consolida o módulo `A pagar/receber` para operação financeira recorrente e adiciona manutenção automática das séries mensais. Categorias passam a definir quando pedem cliente ou fornecedor, a API do Companion ganha mais contexto para autoimportação, a nova área de integrações resolve valores externos sem depender de ajuste manual repetitivo na inbox e títulos recorrentes agora conseguem sustentar contratos mensais contínuos.
 
 ### Adicionado
 - Clientes e fornecedores: nova área em `/parties` para cadastrar contatos ativos e inativos com tipo, documento, email, telefone e anotação opcional.
@@ -15,11 +15,14 @@ Esta próxima versão amplia o vínculo de lançamentos com contatos externos: c
 - Lançamentos: o campo Cliente/Fornecedor aparece conforme a categoria selecionada, com coluna e filtro dedicados na lista de lançamentos.
 - Companion/API: endpoints de pré-lançamentos agora aceitam conta, cartão, categoria, pessoa, cliente/fornecedor, forma de pagamento, data da compra e tentativa de importação automática para lançamento.
 - Integrações: nova aba em `/settings` para mapear valores externos de cliente/fornecedor e categoria por `sourceApp` e `profileKey`, com fila de pendências derivada da inbox.
+- A pagar/receber: títulos financeiros agora podem ser criados como recorrência mensal, com série aberta, geração automática de 12 meses futuros, data final opcional e ações para encerrar, estender ou reativar a recorrência.
+- Infraestrutura: novo endpoint interno autenticado por `JOBS_SECRET` e container `jobs` no Docker Compose para recompor diariamente o horizonte das séries recorrentes.
 
 ### Alterado
 - Projeto: renomeado para OpenMonetis PE (`openmonetis-pe`) e reposicionado para controle financeiro simples de pequenas empresas, incluindo metadados, README, landing page, Docker, setup e links públicos.
 - Clientes: a rota antiga `/clients` redireciona para `/parties`.
 - Integrações: contas passam a participar do mapeamento da inbox e cada cadastro de conta, categoria e cliente/fornecedor agora oferece um atalho direto para gerenciar seus vínculos em `Ajustes > Integrações`.
+- A pagar/receber: edições em títulos recorrentes passaram a diferenciar alteração isolada de alteração em série futura, enquanto dashboard e calendário agora materializam recorrências automaticamente antes de montar seus dados.
 
 ## [2.7.10] - 2026-06-27
 

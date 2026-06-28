@@ -421,6 +421,113 @@ export const invoices = pgTable(
 	}),
 );
 
+export const financialTitles = pgTable(
+	"titulos_financeiros",
+	{
+		id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+		type: text("tipo").notNull(),
+		status: text("status").notNull().default("pending"),
+		name: text("nome").notNull(),
+		description: text("descricao"),
+		amount: numeric("valor", { precision: 12, scale: 2 }).notNull(),
+		dueDate: date("data_vencimento", { mode: "date" }).notNull(),
+		competencePeriod: text("periodo_competencia").notNull(),
+		paymentMethod: text("forma_pagamento").notNull(),
+		settledAt: date("data_baixa", { mode: "date" }),
+		settledAmount: numeric("valor_baixado", {
+			precision: 12,
+			scale: 2,
+		}),
+		cancelledAt: timestamp("cancelado_em", {
+			mode: "date",
+			withTimezone: true,
+		}),
+		createdAt: timestamp("created_at", {
+			mode: "date",
+			withTimezone: true,
+		})
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp("updated_at", {
+			mode: "date",
+			withTimezone: true,
+		})
+			.notNull()
+			.defaultNow(),
+		userId: text("user_id")
+			.notNull()
+			.references(() => user.id, { onDelete: "cascade" }),
+		partyId: uuid("cliente_fornecedor_id").references(() => parties.id, {
+			onDelete: "set null",
+			onUpdate: "cascade",
+		}),
+		categoryId: uuid("categoria_id").references(() => categories.id, {
+			onDelete: "set null",
+			onUpdate: "cascade",
+		}),
+		accountId: uuid("conta_id").references(() => financialAccounts.id, {
+			onDelete: "set null",
+			onUpdate: "cascade",
+		}),
+		payerId: uuid("pagador_id").references(() => payers.id, {
+			onDelete: "set null",
+			onUpdate: "cascade",
+		}),
+		settlementTransactionId: uuid("lancamento_baixa_id").references(
+			() => transactions.id,
+			{
+				onDelete: "set null",
+				onUpdate: "cascade",
+			},
+		),
+		seriesId: uuid("serie_id"),
+		seriesRole: text("papel_serie"),
+		seriesFrequency: text("frequencia_serie"),
+		seriesIndex: integer("indice_serie"),
+		seriesStartDate: date("data_inicio_serie", { mode: "date" }),
+		seriesEndDate: date("data_fim_serie", { mode: "date" }),
+		seriesAnchorDay: smallint("dia_ancora_serie"),
+		seriesGeneratedThrough: text("gerado_ate_periodo_serie"),
+		seriesClosedAt: timestamp("encerrado_em_serie", {
+			mode: "date",
+			withTimezone: true,
+		}),
+	},
+	(table) => ({
+		userIdCompetencePeriodIdx: index(
+			"titulos_financeiros_user_periodo_competencia_idx",
+		).on(table.userId, table.competencePeriod),
+		userIdDueDateIdx: index("titulos_financeiros_user_data_vencimento_idx").on(
+			table.userId,
+			table.dueDate,
+		),
+		userIdStatusIdx: index("titulos_financeiros_user_status_idx").on(
+			table.userId,
+			table.status,
+		),
+		userIdTypeIdx: index("titulos_financeiros_user_tipo_idx").on(
+			table.userId,
+			table.type,
+		),
+		userIdSeriesIdIdx: index("titulos_financeiros_user_serie_id_idx").on(
+			table.userId,
+			table.seriesId,
+		),
+		userIdSeriesRoleIdx: index("titulos_financeiros_user_papel_serie_idx").on(
+			table.userId,
+			table.seriesRole,
+		),
+		settlementTransactionIdUnique: uniqueIndex(
+			"titulos_financeiros_lancamento_baixa_id_key",
+		).on(table.settlementTransactionId),
+		recurringSeriesPeriodUnique: uniqueIndex(
+			"titulos_financeiros_user_serie_periodo_unique",
+		)
+			.on(table.userId, table.seriesId, table.competencePeriod)
+			.where(sql`${table.seriesId} IS NOT NULL`),
+	}),
+);
+
 export const budgets = pgTable(
 	"orcamentos",
 	{
@@ -948,6 +1055,36 @@ export const budgetsRelations = relations(budgets, ({ one }) => ({
 		references: [categories.id],
 	}),
 }));
+
+export const financialTitlesRelations = relations(
+	financialTitles,
+	({ one }) => ({
+		user: one(user, {
+			fields: [financialTitles.userId],
+			references: [user.id],
+		}),
+		party: one(parties, {
+			fields: [financialTitles.partyId],
+			references: [parties.id],
+		}),
+		category: one(categories, {
+			fields: [financialTitles.categoryId],
+			references: [categories.id],
+		}),
+		financialAccount: one(financialAccounts, {
+			fields: [financialTitles.accountId],
+			references: [financialAccounts.id],
+		}),
+		payer: one(payers, {
+			fields: [financialTitles.payerId],
+			references: [payers.id],
+		}),
+		settlementTransaction: one(transactions, {
+			fields: [financialTitles.settlementTransactionId],
+			references: [transactions.id],
+		}),
+	}),
+);
 
 export const notesRelations = relations(notes, ({ one, many }) => ({
 	user: one(user, {

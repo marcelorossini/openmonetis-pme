@@ -69,6 +69,8 @@ O objetivo deste fork é manter uma ferramenta self-hosted para pequenos negóci
 
 💰 **Contas e transações** — Contas bancárias, cartões, dinheiro, receitas, despesas, rendimentos e transferências. Categorização, divisão de lançamentos entre várias pessoas, vínculo opcional a clientes ou fornecedores conforme a categoria, filtros combináveis com intervalo de datas, extratos detalhados com identificação visual clara da conta e importação de extratos OFX e XLS/XLSX com detecção automática de categoria.
 
+🧾 **A pagar e a receber** — Cadastre compromissos financeiros antes da movimentação real do caixa, com vencimento, cliente ou fornecedor, categoria, conta prevista e status calculado automaticamente. A baixa total cria o lançamento correspondente, preserva o histórico do compromisso, alimenta o dashboard e aparece no calendário financeiro. Títulos recorrentes mensais mantêm uma série aberta com edição por escopo, data final opcional e horizonte automático dos próximos 12 meses. A listagem usa paginação e uma toolbar operacional alinhada com a experiência de `Lançamentos`, mantendo as ações e colunas próprias do módulo.
+
 📊 **Dashboard e relatórios** — Widgets personalizáveis com listas consistentes, métricas com atalhos para lançamentos, gráficos de evolução, comparativos por categoria, tendências, uso de cartões, top estabelecimentos e navegação direta entre meses pelo seletor de período. Exportação em PDF e Excel.
 
 💳 **Faturas de cartão** — Acompanhe faturas por período, controle limites e vencimentos com identificação visual mais clara do cartão.
@@ -261,7 +263,7 @@ pnpm backup           # Backup completo do banco (ver seção Backup)
 ### Docker
 
 ```bash
-pnpm docker:up      # Sobe app (Docker Hub) + banco em background
+pnpm docker:up      # Sobe app (Docker Hub) + banco + jobs em background
 pnpm docker:db      # Sobe apenas o banco em background (usar com pnpm dev)
 pnpm docker:down    # Para e remove os containers
 pnpm docker:logs    # Logs em tempo real (todos os containers)
@@ -272,7 +274,7 @@ pnpm docker:update  # Atualiza para a imagem mais recente do Hub e reinicia
 
 ## 🐳 Docker
 
-O `Dockerfile` usa multi-stage build (deps → builder → runner) com imagem final ~200MB rodando como usuário não-root. Health checks configurados para ambos os serviços (PostgreSQL via `pg_isready`, app via `GET /api/health`).
+O `Dockerfile` usa multi-stage build (deps → builder → runner) com imagem final ~200MB rodando como usuário não-root. Health checks configurados para banco e app (PostgreSQL via `pg_isready`, app via `GET /api/health`). O `docker-compose.yml` também sobe um container separado de jobs para rotinas agendadas, começando pela manutenção diária das recorrências de `A pagar/receber`.
 
 ### Self-hosting (recomendado)
 
@@ -285,12 +287,29 @@ docker compose up -d
 
 As credenciais padrão do banco já estão configuradas. Para personalizar (senhas, opcionais), crie um `.env` na mesma pasta antes de subir — veja [Variáveis de Ambiente](#-variáveis-de-ambiente).
 
+Para usar o container de jobs com recorrências mensais, você pode definir:
+
+```env
+JOBS_SECRET=opcional-para-restringir-o-endpoint
+JOBS_INTERVAL_SECONDS=86400
+JOBS_RUN_ON_START=true
+```
+
+O worker chama internamente `POST /api/internal/jobs/recurring-financial-titles` uma vez por dia e recompõe os meses faltantes das séries recorrentes ativas.
+Quando você sobe só o `docker-compose.yml`, o serviço `jobs` baixa esse script automaticamente do repositório; quando roda a partir do clone local, ele usa o arquivo versionado do próprio projeto.
+
 ### Banco remoto (Supabase, Neon, Railway...)
 
 Suba apenas o app e aponte para o banco externo via `DATABASE_URL` no `.env`:
 
 ```bash
 docker compose up -d app
+```
+
+Se quiser manter o job diário ativo com banco remoto, suba também o serviço `jobs`:
+
+```bash
+docker compose up -d app jobs
 ```
 
 ### Comandos úteis
@@ -574,6 +593,7 @@ openmonetis-pe/
 │   │   ├── accounts/              # Contas bancárias
 │   │   ├── categories/            # Categorias e histórico
 │   │   ├── budgets/               # Orçamentos
+│   │   ├── receivables-payables/  # Títulos financeiros a pagar e a receber
 │   │   ├── payers/                # Pagadores e compartilhamento
 │   │   ├── inbox/                 # Pré-lançamentos do Companion
 │   │   ├── insights/              # Análises com IA

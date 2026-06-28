@@ -1,3 +1,4 @@
+import type { FinancialTitleListItem } from "@/features/receivables-payables/types";
 import type {
 	SelectOption,
 	TransactionItem,
@@ -40,6 +41,12 @@ export type CalendarEvent =
 				isPaid: boolean;
 				paymentDate: string | null;
 			};
+	  }
+	| {
+			id: string;
+			type: "financial-title";
+			date: string;
+			title: FinancialTitleListItem;
 	  };
 
 export type CalendarPeriod = {

@@ -34,6 +34,11 @@ export const EVENT_TYPE_STYLES: Record<
 			"bg-violet-100 text-violet-600 dark:bg-violet-900/10 dark:text-violet-500",
 		dot: "bg-violet-600 dark:bg-violet-500",
 	},
+	"financial-title": {
+		wrapper:
+			"bg-emerald-100 text-emerald-700 dark:bg-emerald-900/10 dark:text-emerald-400",
+		dot: "bg-emerald-600 dark:bg-emerald-400",
+	},
 };
 
 const formatCurrencyValue = (value: number | null | undefined) =>
@@ -48,6 +53,8 @@ const buildEventLabel = (event: CalendarEvent) => {
 			return event.transaction.name;
 		case "card":
 			return event.card.name;
+		case "financial-title":
+			return event.title.name;
 		default:
 			return "";
 	}
@@ -64,6 +71,8 @@ const buildEventComplement = (event: CalendarEvent) => {
 			return event.card.totalDue !== null
 				? formatCurrencyValue(event.card.totalDue)
 				: null;
+		case "financial-title":
+			return formatCurrencyValue(event.title.amount);
 		default:
 			return null;
 	}
@@ -72,6 +81,7 @@ const buildEventComplement = (event: CalendarEvent) => {
 const isPaid = (event: CalendarEvent) => {
 	if (event.type === "boleto") return Boolean(event.transaction.isSettled);
 	if (event.type === "card") return event.card.isPaid;
+	if (event.type === "financial-title") return event.title.status === "settled";
 	return false;
 };
 
