@@ -37,6 +37,8 @@ interface BatchResult {
 	autoImported?: boolean;
 	transactionId?: string;
 	autoImportError?: string;
+	reconciliationStatus?: "reconciled" | "unmatched" | "ambiguous";
+	reconciledTitleId?: string;
 	error?: string;
 }
 

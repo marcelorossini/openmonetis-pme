@@ -89,7 +89,9 @@ O objetivo deste fork é manter uma ferramenta self-hosted para pequenos negóci
 
 📲 **OpenMonetis Companion** — App Android que captura notificações bancárias (Nubank, Itaú, Bradesco, Inter, C6 e outros) e envia automaticamente como pré-lançamentos para revisão — sem digitar nada. [Repositório](https://github.com/felipegcoutinho/openmonetis-companion).
 
-O endpoint do Companion também aceita dados canônicos para agilizar a revisão: data da compra, forma de pagamento, conta ou cartão, categoria, pessoa e cliente/fornecedor. Quando o payload envia `autoImport: true`, o OpenMonetis PE tenta criar o lançamento automaticamente; se faltar algum dado obrigatório, o item permanece na inbox para revisão.
+O endpoint do Companion também aceita dados canônicos para agilizar a revisão: data da compra, forma de pagamento, conta ou cartão, categoria, pessoa e cliente/fornecedor. Quando o payload envia `autoImport: true`, o OpenMonetis PE tenta criar o lançamento automaticamente e, em seguida, tenta conciliar esse lançamento com um único título pendente compatível em `A pagar/receber`.
+
+Se a regra automática encontrar exatamente um título compatível, o título é baixado usando o próprio lançamento importado. Quando houver zero candidatos ou mais de um candidato, o lançamento continua importado normalmente, mas entra na tela `Conciliações`, onde você pode vincular manualmente um título existente ou dispensar explicitamente a necessidade de título.
 
 Em `Ajustes > Integrações`, valores externos recebidos pela API podem ser mapeados para contas, categorias e clientes/fornecedores locais por origem e perfil. Isso cobre casos como conta vinda por alias, `partyId` chegando como CNPJ ou aliases de categoria vindos de webhook, e reprocessa automaticamente os pré-lançamentos pendentes quando o mapeamento é salvo. Os próprios cadastros de conta, categoria e cliente/fornecedor também oferecem um atalho direto para abrir essa área já filtrada pela entidade.
 
@@ -596,6 +598,7 @@ openmonetis-pe/
 │   │   ├── receivables-payables/  # Títulos financeiros a pagar e a receber
 │   │   ├── payers/                # Pagadores e compartilhamento
 │   │   ├── inbox/                 # Pré-lançamentos do Companion
+│   │   ├── reconciliations/       # Revisão manual de vínculos com títulos
 │   │   ├── insights/              # Análises com IA
 │   │   ├── reports/               # Relatórios e exportações
 │   │   ├── notes/                 # Anotações

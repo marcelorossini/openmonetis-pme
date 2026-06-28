@@ -25,6 +25,13 @@ export interface InboxItem {
 	partyExternalKey: string | null;
 	autoImportRequested: boolean;
 	autoImportError: string | null;
+	reconciliationStatus: string | null;
+	reconciledTitleId: string | null;
+	reconciliationSummary: string | null;
+	reconciliationAttemptedAt: Date | null;
+	reconciliationResolvedAt: Date | null;
+	reconciliationDismissed: boolean;
+	reconciliationDismissedAt: Date | null;
 	status: string;
 	transactionId: string | null;
 	processedAt: Date | null;

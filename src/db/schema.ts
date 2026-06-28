@@ -694,6 +694,30 @@ export const inboxItems = pgTable(
 			.notNull()
 			.default(false),
 		autoImportError: text("auto_import_error"),
+		reconciliationStatus: text("reconciliation_status"),
+		reconciledTitleId: uuid("titulo_conciliado_id").references(
+			() => financialTitles.id,
+			{
+				onDelete: "set null",
+				onUpdate: "cascade",
+			},
+		),
+		reconciliationSummary: text("reconciliation_summary"),
+		reconciliationAttemptedAt: timestamp("reconciliation_attempted_at", {
+			mode: "date",
+			withTimezone: true,
+		}),
+		reconciliationResolvedAt: timestamp("reconciliation_resolved_at", {
+			mode: "date",
+			withTimezone: true,
+		}),
+		reconciliationDismissed: boolean("reconciliation_dismissed")
+			.notNull()
+			.default(false),
+		reconciliationDismissedAt: timestamp("reconciliation_dismissed_at", {
+			mode: "date",
+			withTimezone: true,
+		}),
 
 		// Status de processamento
 		status: text("status").notNull().default("pending"), // pending, processed, discarded
@@ -732,6 +756,12 @@ export const inboxItems = pgTable(
 		),
 		transactionIdIdx: index("pre_lancamentos_lancamento_id_idx").on(
 			table.transactionId,
+		),
+		userIdReconciliationStatusIdx: index(
+			"pre_lancamentos_user_id_reconciliation_status_idx",
+		).on(table.userId, table.reconciliationStatus),
+		reconciledTitleIdIdx: index("pre_lancamentos_titulo_conciliado_id_idx").on(
+			table.reconciledTitleId,
 		),
 	}),
 );
@@ -1116,6 +1146,10 @@ export const inboxItemsRelations = relations(inboxItems, ({ one }) => ({
 	transaction: one(transactions, {
 		fields: [inboxItems.transactionId],
 		references: [transactions.id],
+	}),
+	reconciledTitle: one(financialTitles, {
+		fields: [inboxItems.reconciledTitleId],
+		references: [financialTitles.id],
 	}),
 }));
 

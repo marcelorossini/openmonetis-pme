@@ -12,6 +12,8 @@ import { createTransactionForUser } from "@/features/transactions/actions/create
 import { revalidateForEntity } from "@/shared/lib/actions/helpers";
 import { db } from "@/shared/lib/db";
 import { getAdminPayerId } from "@/shared/lib/payers/get-admin-id";
+import { attemptInboxItemAutoReconciliation } from "@/shared/lib/reconciliations/service";
+import type { ReconciliationStatus } from "@/shared/lib/reconciliations/types";
 import type { inboxItemSchema } from "@/shared/lib/schemas/inbox";
 import { parseLocalDateString } from "@/shared/utils/date";
 import { normalizeOptionalText, resolveInboxMappingIds } from "./mapping";
@@ -32,6 +34,11 @@ export type InboxProcessingResult = {
 	autoImported: boolean;
 	transactionId?: string;
 	autoImportError?: string;
+	reconciliationStatus?: Extract<
+		ReconciliationStatus,
+		"reconciled" | "unmatched" | "ambiguous"
+	>;
+	reconciledTitleId?: string;
 };
 
 export async function processInboxApiItem({
@@ -130,6 +137,11 @@ export async function reprocessPendingInboxItem({
 	autoImported: boolean;
 	transactionId?: string;
 	autoImportError?: string;
+	reconciliationStatus?: Extract<
+		ReconciliationStatus,
+		"reconciled" | "unmatched" | "ambiguous"
+	>;
+	reconciledTitleId?: string;
 }> {
 	const item = await db.query.inboxItems.findFirst({
 		where: and(
@@ -249,13 +261,26 @@ export async function reprocessPendingInboxItem({
 		})
 		.where(eq(inboxItems.id, refreshedItem.id));
 
+	const reconciliationResult = await attemptInboxItemAutoReconciliation({
+		userId,
+		inboxItemId: refreshedItem.id,
+		transactionId,
+	});
+
 	revalidateForEntity("transactions", userId);
+	revalidateForEntity("financialTitles", userId);
 	revalidateForEntity("inbox", userId);
+	revalidateForEntity("reconciliations", userId);
 
 	return {
 		status: "processed",
 		autoImported: true,
 		transactionId,
+		reconciliationStatus:
+			reconciliationResult.status === "dismissed"
+				? undefined
+				: reconciliationResult.status,
+		reconciledTitleId: reconciliationResult.reconciledTitleId ?? undefined,
 	};
 }
 

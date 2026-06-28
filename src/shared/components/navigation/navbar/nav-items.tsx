@@ -64,6 +64,13 @@ export const NAV_SECTIONS: NavSection[] = [
 				iconClass: "text-primary",
 			},
 			{
+				href: "/reconciliations",
+				label: "Conciliações",
+				description: "Revise vínculos pendentes com A pagar/receber",
+				icon: <RiSecurePaymentLine className="size-4" />,
+				iconClass: "text-primary",
+			},
+			{
 				href: "/calendar",
 				label: "Calendário",
 				description: "Visualize lançamentos por dia",

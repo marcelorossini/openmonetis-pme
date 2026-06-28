@@ -36,6 +36,13 @@ const revalidateConfig = {
 	transactions: ["/transactions", "/accounts", "/attachments"],
 	inbox: ["/inbox", "/transactions", "/dashboard"],
 	attachments: ["/attachments"],
+	reconciliations: [
+		"/reconciliations",
+		"/inbox",
+		"/transactions",
+		"/receivables-payables",
+		"/dashboard",
+	],
 	financialTitles: [
 		"/receivables-payables",
 		"/dashboard",
@@ -56,6 +63,7 @@ const DASHBOARD_ENTITIES: ReadonlySet<string> = new Set([
 	"notes",
 	"notifications",
 	"inbox",
+	"reconciliations",
 	"recurring",
 	"financialTitles",
 ]);

@@ -134,4 +134,5 @@ yarn.lock          # Se usa pnpm, não precisa do yarn lock
 local/
 scratch/
 playground/
+.worktrees/
 /docs

@@ -110,6 +110,8 @@ export async function POST(request: Request) {
 				autoImported: result.autoImported,
 				transactionId: result.transactionId,
 				autoImportError: result.autoImportError,
+				reconciliationStatus: result.reconciliationStatus,
+				reconciledTitleId: result.reconciledTitleId,
 			},
 			{ status: 201 },
 		);
