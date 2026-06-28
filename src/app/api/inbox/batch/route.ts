@@ -1,9 +1,6 @@
-import { and, eq, gt, isNull } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { apiTokens } from "@/db/schema";
-import { extractBearerToken, hashToken } from "@/shared/lib/auth/api-token";
-import { db } from "@/shared/lib/db";
+import { authenticateApiTokenRequest } from "@/shared/lib/auth/api-token-server";
 import { inboxBatchSchema } from "@/shared/lib/schemas/inbox";
 import { processInboxApiItem } from "../processing";
 
@@ -44,45 +41,13 @@ interface BatchResult {
 
 export async function POST(request: Request) {
 	try {
-		// Extrair token do header
-		const authHeader = request.headers.get("Authorization");
-		const token = extractBearerToken(authHeader);
-
-		if (!token) {
-			return NextResponse.json(
-				{ error: "Token não fornecido" },
-				{ status: 401 },
-			);
-		}
-
-		// Validar token opm_xxx via hash
-		if (!token.startsWith("opm_")) {
-			return NextResponse.json(
-				{ error: "Formato de token inválido" },
-				{ status: 401 },
-			);
-		}
-
-		const tokenHash = hashToken(token);
-
-		// Buscar token no banco
-		const tokenRecord = await db.query.apiTokens.findFirst({
-			where: and(
-				eq(apiTokens.tokenHash, tokenHash),
-				isNull(apiTokens.revokedAt),
-				gt(apiTokens.expiresAt, new Date()),
-			),
-		});
-
-		if (!tokenRecord) {
-			return NextResponse.json(
-				{ error: "Token inválido ou revogado" },
-				{ status: 401 },
-			);
+		const auth = await authenticateApiTokenRequest(request);
+		if (!auth.ok) {
+			return NextResponse.json({ error: auth.error }, { status: auth.status });
 		}
 
 		// Rate limiting
-		if (!checkRateLimit(tokenRecord.userId)) {
+		if (!checkRateLimit(auth.data.userId)) {
 			return NextResponse.json(
 				{ error: "Limite de requisições excedido", retryAfter: 60 },
 				{ status: 429 },
@@ -96,7 +61,7 @@ export async function POST(request: Request) {
 		const settled = await Promise.allSettled(
 			items.map((item) =>
 				processInboxApiItem({
-					userId: tokenRecord.userId,
+					userId: auth.data.userId,
 					data: item,
 				}),
 			),
@@ -116,20 +81,6 @@ export async function POST(request: Request) {
 				error: "Erro ao lançar notificação",
 			};
 		});
-
-		// Atualizar último uso do token
-		const clientIp =
-			request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-			request.headers.get("x-real-ip") ||
-			null;
-
-		await db
-			.update(apiTokens)
-			.set({
-				lastUsedAt: new Date(),
-				lastUsedIp: clientIp,
-			})
-			.where(eq(apiTokens.id, tokenRecord.id));
 
 		const successCount = results.filter((r) => r.success).length;
 		const failCount = results.filter((r) => !r.success).length;

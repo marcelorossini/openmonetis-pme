@@ -95,6 +95,8 @@ Se a regra automática encontrar exatamente um título compatível, o título é
 
 Em `Ajustes > Integrações`, valores externos recebidos pela API podem ser mapeados para contas, categorias e clientes/fornecedores locais por origem e perfil. Isso cobre casos como conta vinda por alias, `partyId` chegando como CNPJ ou aliases de categoria vindos de webhook, e reprocessa automaticamente os pré-lançamentos pendentes quando o mapeamento é salvo. Os próprios cadastros de conta, categoria e cliente/fornecedor também oferecem um atalho direto para abrir essa área já filtrada pela entidade.
 
+Além da inbox, a API autenticada por Bearer token agora também expõe `/api/parties` para integrações que precisam gravar clientes e fornecedores diretamente no sistema principal. O recurso suporta listagem paginada, detalhe por ID, criação, atualização e inativação lógica. No `POST`, um bloco opcional `integration` com `sourceApp`, `profileKey` e `externalKey` permite reaproveitar o mapeamento já existente de clientes/fornecedores: se o vínculo já existir, o cadastro é atualizado no mesmo endpoint; se não existir, o OpenMonetis cria o cadastro e grava o binding.
+
 Para detalhes do fluxo, veja:
 
 - `docs/integrations/perfis-de-conversao.md`
