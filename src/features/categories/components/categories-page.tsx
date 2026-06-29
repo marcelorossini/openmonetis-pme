@@ -32,15 +32,10 @@ import {
 	CATEGORY_TYPE_LABEL,
 	CATEGORY_TYPES,
 	type CategoryType,
+	isProtectedCategoryName,
 } from "@/shared/lib/categories/constants";
 import { CategoryDialog } from "./category-dialog";
 import type { Category } from "./types";
-
-const CATEGORIAS_PROTEGIDAS = [
-	"Transferência interna",
-	"Saldo inicial",
-	"Pagamentos",
-];
 
 interface CategoriesPageProps {
 	categories: Category[];
@@ -168,7 +163,7 @@ export function CategoriesPage({ categories }: CategoriesPageProps) {
 											</TableHeader>
 											<TableBody>
 												{categoriesByType[type].map((category, index) => {
-													const isProtegida = CATEGORIAS_PROTEGIDAS.includes(
+													const isProtegida = isProtectedCategoryName(
 														category.name,
 													);
 

@@ -10,6 +10,8 @@ test("spec público expõe os endpoints externos esperados com versão do app", 
 	assert.equal(document.info.version, version);
 	assert.deepEqual(Object.keys(document.paths).sort(), [
 		"/api/auth/device/verify",
+		"/api/categories",
+		"/api/categories/{categoryId}",
 		"/api/health",
 		"/api/inbox",
 		"/api/inbox/batch",
@@ -32,11 +34,16 @@ test("spec público define bearerAuth e deixa health sem autenticação", () => 
 	assert.deepEqual(inbox.post.security, [{ bearerAuth: [] }]);
 });
 
-test("spec público inclui exemplos completos para inbox e parties", () => {
+test("spec público inclui exemplos completos para inbox, parties e categories", () => {
 	const document = buildPublicOpenApiDocument();
 	const inboxPost = document.paths["/api/inbox"].post;
+	const categoriesPost = document.paths["/api/categories"].post;
+	const categoryPatch = document.paths["/api/categories/{categoryId}"].patch;
 	const partiesPost = document.paths["/api/parties"].post;
 	const partyPatch = document.paths["/api/parties/{partyId}"].patch;
+	const categoryCreatedExamples = categoriesPost.responses["201"].content[
+		"application/json"
+	].examples as Record<string, { value?: unknown }>;
 	const createdExamples = partiesPost.responses["201"].content[
 		"application/json"
 	].examples as Record<string, { value?: unknown }>;
@@ -50,8 +57,17 @@ test("spec público inclui exemplos completos para inbox e parties", () => {
 		"Parties precisa expor resposta de criação.",
 	);
 	assert.ok(
+		categoryCreatedExamples.created?.value,
+		"Categories precisa expor resposta de criação.",
+	);
+	assert.ok(
 		partyPatch.requestBody.content["application/json"].examples.default.value
 			.integration,
 		"PATCH de party precisa demonstrar uso de integration.",
+	);
+	assert.ok(
+		categoryPatch.requestBody.content["application/json"].examples.default.value
+			.integration,
+		"PATCH de category precisa demonstrar uso de integration.",
 	);
 });

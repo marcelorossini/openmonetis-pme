@@ -65,6 +65,7 @@ Desde que assumiu a condução do `openmonetis-pe`, o fork ganhou um direcioname
 - expansão da **API da inbox** com payload canônico, autoimportação e conciliação automática de títulos
 - área de **Integrações** para mapear contas, categorias e clientes/fornecedores por `sourceApp`, `profileKey` e chave externa
 - API pública autenticada por token para **cadastro de clientes e fornecedores** em `/api/parties`
+- API pública autenticada por token para **cadastro de categorias** em `/api/categories`
 - catálogo público de endpoints com **Scalar** em `/api-docs` e spec em `/openapi.json`
 - melhorias contínuas em UI, relatórios, importação, preferências, anexos e fluxo operacional do fork
 
@@ -108,7 +109,7 @@ Se a regra automática encontrar exatamente um título compatível, o título é
 
 Em `Ajustes > Integrações`, valores externos recebidos pela API podem ser mapeados para contas, categorias e clientes/fornecedores locais por origem e perfil. Isso cobre casos como conta vinda por alias, `partyId` chegando como CNPJ ou aliases de categoria vindos de webhook, e reprocessa automaticamente os pré-lançamentos pendentes quando o mapeamento é salvo. Os próprios cadastros de conta, categoria e cliente/fornecedor também oferecem um atalho direto para abrir essa área já filtrada pela entidade.
 
-Além da inbox, a API autenticada por Bearer token agora também expõe `/api/parties` para integrações que precisam gravar clientes e fornecedores diretamente no sistema principal. O recurso suporta listagem paginada, detalhe por ID, criação, atualização e inativação lógica. No `POST`, um bloco opcional `integration` com `sourceApp`, `profileKey` e `externalKey` permite reaproveitar o mapeamento já existente de clientes/fornecedores: se o vínculo já existir, o cadastro é atualizado no mesmo endpoint; se não existir, o OpenMonetis cria o cadastro e grava o binding. A referência interativa dos endpoints públicos fica em `/api-docs`, com o spec OpenAPI servido em `/openapi.json`.
+Além da inbox, a API autenticada por Bearer token agora também expõe `/api/parties` e `/api/categories` para integrações que precisam gravar clientes, fornecedores e categorias diretamente no sistema principal. Ambos os recursos suportam listagem paginada, detalhe por ID, criação e atualização. Em `parties`, o `DELETE` faz inativação lógica; em `categories`, o `DELETE` remove a categoria, respeitando o bloqueio das categorias protegidas. No `POST`, um bloco opcional `integration` com `sourceApp`, `profileKey` e `externalKey` permite reaproveitar o mapeamento já existente: se o vínculo já existir, o cadastro é atualizado no mesmo endpoint; se não existir, o OpenMonetis cria o registro e grava o binding. A referência interativa dos endpoints públicos fica em `/api-docs`, com o spec OpenAPI servido em `/openapi.json`.
 
 Para detalhes do fluxo, veja:
 

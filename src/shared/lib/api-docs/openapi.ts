@@ -23,6 +23,24 @@ const partyExample = {
 	],
 } as const;
 
+const categoryExample = {
+	id: "732f8cba-c77c-4bf2-b6d8-f6a3d356f1db",
+	name: "Serviços Prestados",
+	type: "receita",
+	icon: "RiUserStarLine",
+	partyKind: "cliente",
+	createdAt: "2026-06-28T16:10:00.000Z",
+	integrations: [
+		{
+			sourceApp: "omie",
+			profileKey: "empresa-principal",
+			externalKey: "categoria-321",
+			createdAt: "2026-06-28T16:10:00.000Z",
+			updatedAt: "2026-06-28T16:10:00.000Z",
+		},
+	],
+} as const;
+
 const inboxItemExample = {
 	sourceApp: "openmonetis-companion",
 	sourceAppName: "OpenMonetis Companion",
@@ -54,6 +72,18 @@ const partyWriteExample = {
 		sourceApp: "omie",
 		profileKey: "empresa-principal",
 		externalKey: "cliente-123",
+	},
+} as const;
+
+const categoryWriteExample = {
+	name: "Serviços Prestados",
+	type: "receita",
+	icon: "RiUserStarLine",
+	partyKind: "cliente",
+	integration: {
+		sourceApp: "omie",
+		profileKey: "empresa-principal",
+		externalKey: "categoria-321",
 	},
 } as const;
 
@@ -101,6 +131,10 @@ export function buildPublicOpenApiDocument() {
 					"Recebimento de pré-lançamentos e tentativas de autoimportação.",
 			},
 			{
+				name: "Categories",
+				description: "Cadastro de categorias com suporte a binding externo.",
+			},
+			{
 				name: "Parties",
 				description:
 					"Cadastro de clientes e fornecedores com suporte a binding externo.",
@@ -122,6 +156,16 @@ export function buildPublicOpenApiDocument() {
 					in: "path",
 					required: true,
 					description: "ID interno do cliente/fornecedor no OpenMonetis.",
+					schema: {
+						type: "string",
+						format: "uuid",
+					},
+				},
+				CategoryId: {
+					name: "categoryId",
+					in: "path",
+					required: true,
+					description: "ID interno da categoria no OpenMonetis.",
 					schema: {
 						type: "string",
 						format: "uuid",
@@ -295,6 +339,105 @@ export function buildPublicOpenApiDocument() {
 							type: "array",
 							items: { $ref: "#/components/schemas/InboxBatchItemResponse" },
 						},
+					},
+				},
+				CategoryIntegrationPayload: {
+					type: "object",
+					required: ["sourceApp", "externalKey"],
+					properties: {
+						sourceApp: { type: "string", minLength: 1, maxLength: 255 },
+						profileKey: { type: ["string", "null"], maxLength: 255 },
+						externalKey: { type: "string", minLength: 1, maxLength: 255 },
+					},
+				},
+				CategoryWriteRequest: {
+					type: "object",
+					required: ["name", "type"],
+					properties: {
+						name: { type: "string", minLength: 1 },
+						type: { type: "string", enum: ["receita", "despesa"] },
+						icon: { type: ["string", "null"], maxLength: 100 },
+						partyKind: {
+							type: ["string", "null"],
+							enum: ["cliente", "fornecedor", null],
+						},
+						integration: {
+							$ref: "#/components/schemas/CategoryIntegrationPayload",
+						},
+					},
+				},
+				CategoryIntegrationBinding: {
+					type: "object",
+					required: [
+						"sourceApp",
+						"profileKey",
+						"externalKey",
+						"createdAt",
+						"updatedAt",
+					],
+					properties: {
+						sourceApp: { type: "string" },
+						profileKey: { type: ["string", "null"] },
+						externalKey: { type: "string" },
+						createdAt: { type: "string", format: "date-time" },
+						updatedAt: { type: "string", format: "date-time" },
+					},
+				},
+				CategoryItem: {
+					type: "object",
+					required: [
+						"id",
+						"name",
+						"type",
+						"icon",
+						"partyKind",
+						"createdAt",
+						"integrations",
+					],
+					properties: {
+						id: { type: "string", format: "uuid" },
+						name: { type: "string" },
+						type: { type: "string", enum: ["receita", "despesa"] },
+						icon: { type: ["string", "null"] },
+						partyKind: {
+							type: ["string", "null"],
+							enum: ["cliente", "fornecedor", null],
+						},
+						createdAt: { type: "string", format: "date-time" },
+						integrations: {
+							type: "array",
+							items: {
+								$ref: "#/components/schemas/CategoryIntegrationBinding",
+							},
+						},
+					},
+				},
+				CategoriesListResponse: {
+					type: "object",
+					required: ["items", "pagination"],
+					properties: {
+						items: {
+							type: "array",
+							items: { $ref: "#/components/schemas/CategoryItem" },
+						},
+						pagination: {
+							type: "object",
+							required: ["page", "pageSize", "totalItems", "totalPages"],
+							properties: {
+								page: { type: "integer", minimum: 1 },
+								pageSize: { type: "integer", enum: [10, 20, 50, 100] },
+								totalItems: { type: "integer", minimum: 0 },
+								totalPages: { type: "integer", minimum: 1 },
+							},
+						},
+					},
+				},
+				CategoryUpsertResponse: {
+					type: "object",
+					required: ["mode", "item"],
+					properties: {
+						mode: { type: "string", enum: ["created", "updated"] },
+						item: { $ref: "#/components/schemas/CategoryItem" },
 					},
 				},
 				PartyIntegrationPayload: {
@@ -696,6 +839,418 @@ export function buildPublicOpenApiDocument() {
 								{
 									default: {
 										value: buildErrorExample("Erro ao lançar notificações"),
+									},
+								},
+							),
+						},
+					},
+				},
+			},
+			"/api/categories": {
+				get: {
+					tags: ["Categories"],
+					summary: "Lista categorias",
+					description:
+						"Permite paginação, filtros simples e lookup pontual por binding externo usando `sourceApp` e `externalKey`.",
+					security: bearerSecurity,
+					parameters: [
+						{
+							name: "page",
+							in: "query",
+							description: "Página atual.",
+							schema: { type: "integer", minimum: 1, default: 1 },
+						},
+						{
+							name: "pageSize",
+							in: "query",
+							description: "Tamanho da página.",
+							schema: { type: "integer", enum: [10, 20, 50, 100], default: 20 },
+						},
+						{
+							name: "search",
+							in: "query",
+							description: "Busca textual em nome, ícone e tipo de vínculo.",
+							schema: { type: "string" },
+						},
+						{
+							name: "type",
+							in: "query",
+							description: "Filtra por tipo da categoria.",
+							schema: { type: "string", enum: ["receita", "despesa"] },
+						},
+						{
+							name: "partyKind",
+							in: "query",
+							description:
+								"Filtra por vínculo esperado com cliente/fornecedor.",
+							schema: { type: "string", enum: ["cliente", "fornecedor"] },
+						},
+						{
+							name: "sourceApp",
+							in: "query",
+							description: "Origem da integração para lookup por binding.",
+							schema: { type: "string" },
+						},
+						{
+							name: "profileKey",
+							in: "query",
+							description: "Perfil opcional do binding.",
+							schema: { type: "string" },
+						},
+						{
+							name: "externalKey",
+							in: "query",
+							description: "Identificador externo para lookup por binding.",
+							schema: { type: "string" },
+						},
+					],
+					responses: {
+						"200": {
+							description: "Lista paginada.",
+							...buildJsonResponse(
+								{ $ref: "#/components/schemas/CategoriesListResponse" },
+								{
+									default: {
+										value: {
+											items: [categoryExample],
+											pagination: {
+												page: 1,
+												pageSize: 20,
+												totalItems: 1,
+												totalPages: 1,
+											},
+										},
+									},
+								},
+							),
+						},
+						"400": {
+							description: "Parâmetros de busca inválidos.",
+							...buildJsonResponse(
+								{ $ref: "#/components/schemas/ErrorResponse" },
+								{
+									default: {
+										value: buildErrorExample(
+											"sourceApp e externalKey precisam ser informados juntos.",
+										),
+									},
+								},
+							),
+						},
+						"401": {
+							description: "Token Bearer inválido.",
+							...buildJsonResponse(
+								{ $ref: "#/components/schemas/ErrorResponse" },
+								{
+									default: {
+										value: buildErrorExample("Token inválido ou revogado"),
+									},
+								},
+							),
+						},
+						"500": {
+							description: "Falha interna ao buscar categorias.",
+							...buildJsonResponse(
+								{ $ref: "#/components/schemas/ErrorResponse" },
+								{
+									default: {
+										value: buildErrorExample("Algo deu errado."),
+									},
+								},
+							),
+						},
+					},
+				},
+				post: {
+					tags: ["Categories"],
+					summary: "Cria ou atualiza uma categoria por binding externo",
+					description:
+						"Sem `integration`, sempre cria uma nova categoria. Com `integration`, o endpoint faz upsert por `userId + sourceApp + profileKey + externalKey`.",
+					security: bearerSecurity,
+					requestBody: {
+						required: true,
+						content: {
+							"application/json": {
+								schema: {
+									$ref: "#/components/schemas/CategoryWriteRequest",
+								},
+								examples: {
+									default: {
+										value: categoryWriteExample,
+									},
+								},
+							},
+						},
+					},
+					responses: {
+						"200": {
+							description: "Categoria atualizada pelo upsert de integração.",
+							...buildJsonResponse(
+								{ $ref: "#/components/schemas/CategoryUpsertResponse" },
+								{
+									updated: {
+										value: {
+											mode: "updated",
+											item: categoryExample,
+										},
+									},
+								},
+							),
+						},
+						"201": {
+							description: "Categoria criada.",
+							...buildJsonResponse(
+								{ $ref: "#/components/schemas/CategoryUpsertResponse" },
+								{
+									created: {
+										value: {
+											mode: "created",
+											item: categoryExample,
+										},
+									},
+								},
+							),
+						},
+						"400": {
+							description: "Payload inválido ou categoria protegida.",
+							...buildJsonResponse(
+								{ $ref: "#/components/schemas/ErrorResponse" },
+								{
+									validation: {
+										value: buildErrorExample("Informe o nome da categoria."),
+									},
+									protected: {
+										value: buildErrorExample(
+											"A categoria 'Pagamentos' é protegida e não pode ser editada.",
+										),
+									},
+								},
+							),
+						},
+						"401": {
+							description: "Token Bearer inválido.",
+							...buildJsonResponse(
+								{ $ref: "#/components/schemas/ErrorResponse" },
+								{
+									default: {
+										value: buildErrorExample("Token inválido ou revogado"),
+									},
+								},
+							),
+						},
+						"500": {
+							description: "Falha interna ao persistir a categoria.",
+							...buildJsonResponse(
+								{ $ref: "#/components/schemas/ErrorResponse" },
+								{
+									default: {
+										value: buildErrorExample("Algo deu errado."),
+									},
+								},
+							),
+						},
+					},
+				},
+			},
+			"/api/categories/{categoryId}": {
+				get: {
+					tags: ["Categories"],
+					summary: "Busca o detalhe de uma categoria",
+					security: bearerSecurity,
+					parameters: [{ $ref: "#/components/parameters/CategoryId" }],
+					responses: {
+						"200": {
+							description: "Categoria encontrada.",
+							...buildJsonResponse(
+								{ $ref: "#/components/schemas/CategoryItem" },
+								{
+									default: {
+										value: categoryExample,
+									},
+								},
+							),
+						},
+						"401": {
+							description: "Token Bearer inválido.",
+							...buildJsonResponse(
+								{ $ref: "#/components/schemas/ErrorResponse" },
+								{
+									default: {
+										value: buildErrorExample("Token inválido ou revogado"),
+									},
+								},
+							),
+						},
+						"404": {
+							description: "Categoria não encontrada para o usuário do token.",
+							...buildJsonResponse(
+								{ $ref: "#/components/schemas/ErrorResponse" },
+								{
+									default: {
+										value: buildErrorExample("Categoria não encontrada."),
+									},
+								},
+							),
+						},
+						"500": {
+							description: "Falha interna ao buscar a categoria.",
+							...buildJsonResponse(
+								{ $ref: "#/components/schemas/ErrorResponse" },
+								{
+									default: {
+										value: buildErrorExample("Algo deu errado."),
+									},
+								},
+							),
+						},
+					},
+				},
+				patch: {
+					tags: ["Categories"],
+					summary: "Atualiza uma categoria existente",
+					description:
+						"Também aceita o bloco `integration` para criar ou atualizar o binding externo da categoria.",
+					security: bearerSecurity,
+					parameters: [{ $ref: "#/components/parameters/CategoryId" }],
+					requestBody: {
+						required: true,
+						content: {
+							"application/json": {
+								schema: {
+									$ref: "#/components/schemas/CategoryWriteRequest",
+								},
+								examples: {
+									default: {
+										value: categoryWriteExample,
+									},
+								},
+							},
+						},
+					},
+					responses: {
+						"200": {
+							description: "Categoria atualizada.",
+							...buildJsonResponse(
+								{ $ref: "#/components/schemas/CategoryItem" },
+								{
+									default: {
+										value: categoryExample,
+									},
+								},
+							),
+						},
+						"400": {
+							description: "Payload inválido ou categoria protegida.",
+							...buildJsonResponse(
+								{ $ref: "#/components/schemas/ErrorResponse" },
+								{
+									validation: {
+										value: buildErrorExample("Informe o nome da categoria."),
+									},
+									protected: {
+										value: buildErrorExample(
+											"A categoria 'Pagamentos' é protegida e não pode ser editada.",
+										),
+									},
+								},
+							),
+						},
+						"401": {
+							description: "Token Bearer inválido.",
+							...buildJsonResponse(
+								{ $ref: "#/components/schemas/ErrorResponse" },
+								{
+									default: {
+										value: buildErrorExample("Token inválido ou revogado"),
+									},
+								},
+							),
+						},
+						"404": {
+							description: "Categoria não encontrada.",
+							...buildJsonResponse(
+								{ $ref: "#/components/schemas/ErrorResponse" },
+								{
+									default: {
+										value: buildErrorExample("Categoria não encontrada."),
+									},
+								},
+							),
+						},
+						"500": {
+							description: "Falha interna ao atualizar a categoria.",
+							...buildJsonResponse(
+								{ $ref: "#/components/schemas/ErrorResponse" },
+								{
+									default: {
+										value: buildErrorExample("Algo deu errado."),
+									},
+								},
+							),
+						},
+					},
+				},
+				delete: {
+					tags: ["Categories"],
+					summary: "Remove uma categoria",
+					description:
+						"Remove a categoria fisicamente e também seus bindings externos por cascade. Categorias protegidas não podem ser removidas.",
+					security: bearerSecurity,
+					parameters: [{ $ref: "#/components/parameters/CategoryId" }],
+					responses: {
+						"200": {
+							description: "Categoria removida.",
+							...buildJsonResponse(
+								{ $ref: "#/components/schemas/CategoryItem" },
+								{
+									default: {
+										value: categoryExample,
+									},
+								},
+							),
+						},
+						"400": {
+							description: "Categoria protegida.",
+							...buildJsonResponse(
+								{ $ref: "#/components/schemas/ErrorResponse" },
+								{
+									default: {
+										value: buildErrorExample(
+											"A categoria 'Pagamentos' é protegida e não pode ser removida.",
+										),
+									},
+								},
+							),
+						},
+						"401": {
+							description: "Token Bearer inválido.",
+							...buildJsonResponse(
+								{ $ref: "#/components/schemas/ErrorResponse" },
+								{
+									default: {
+										value: buildErrorExample("Token inválido ou revogado"),
+									},
+								},
+							),
+						},
+						"404": {
+							description: "Categoria não encontrada.",
+							...buildJsonResponse(
+								{ $ref: "#/components/schemas/ErrorResponse" },
+								{
+									default: {
+										value: buildErrorExample("Categoria não encontrada."),
+									},
+								},
+							),
+						},
+						"500": {
+							description: "Falha interna ao remover a categoria.",
+							...buildJsonResponse(
+								{ $ref: "#/components/schemas/ErrorResponse" },
+								{
+									default: {
+										value: buildErrorExample("Algo deu errado."),
 									},
 								},
 							),

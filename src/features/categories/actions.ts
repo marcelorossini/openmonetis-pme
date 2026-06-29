@@ -1,78 +1,42 @@
 "use server";
 
-import { and, eq } from "drizzle-orm";
-import { z } from "zod";
-import { categories } from "@/db/schema";
+import {
+	type CreateCategoryInput,
+	createCategoryInputSchema,
+	type DeleteCategoryInput,
+	deleteCategoryInputSchema,
+	type UpdateCategoryInput,
+	updateCategoryInputSchema,
+} from "@/features/categories/lib/schemas";
+import {
+	CategoryServiceError,
+	createCategoryForUser,
+	deleteCategoryFromApi as deleteCategoryFromApiService,
+	updateCategoryForUser,
+	updateCategoryFromApi as updateCategoryFromApiService,
+	upsertCategoryFromApi as upsertCategoryFromApiService,
+} from "@/features/categories/lib/service";
 import {
 	type ActionResult,
 	handleActionError,
 	revalidateForEntity,
 } from "@/shared/lib/actions/helpers";
 import { getUser } from "@/shared/lib/auth/server";
-import { CATEGORY_TYPES } from "@/shared/lib/categories/constants";
-import { CATEGORY_PARTY_KINDS } from "@/shared/lib/categories/party-kind";
-import { db } from "@/shared/lib/db";
-import { uuidSchema } from "@/shared/lib/schemas/common";
-import { normalizeIconInput } from "@/shared/utils/string";
-
-const categoryBaseSchema = z.object({
-	name: z
-		.string({ message: "Informe o nome da categoria." })
-		.trim()
-		.min(1, "Informe o nome da categoria."),
-	type: z.enum(CATEGORY_TYPES, {
-		message: "Tipo de categoria inválido.",
-	}),
-	icon: z
-		.string()
-		.trim()
-		.max(100, "O ícone deve ter no máximo 100 caracteres.")
-		.nullish()
-		.transform((value) => normalizeIconInput(value)),
-	partyKind: z
-		.enum(CATEGORY_PARTY_KINDS, {
-			message: "Tipo de vínculo inválido.",
-		})
-		.nullish()
-		.transform((value) => value ?? null),
-});
-
-const createCategorySchema = categoryBaseSchema;
-const updateCategorySchema = categoryBaseSchema.extend({
-	id: uuidSchema("Category"),
-});
-const deleteCategorySchema = z.object({
-	id: uuidSchema("Category"),
-});
-
-type CategoryCreateInput = z.infer<typeof createCategorySchema>;
-type CategoryUpdateInput = z.infer<typeof updateCategorySchema>;
-type CategoryDeleteInput = z.infer<typeof deleteCategorySchema>;
 
 export async function createCategoryAction(
-	input: CategoryCreateInput,
+	input: CreateCategoryInput,
 ): Promise<ActionResult<{ id: string }>> {
 	try {
 		const user = await getUser();
-		const data = createCategorySchema.parse(input);
-
-		const [created] = await db
-			.insert(categories)
-			.values({
-				name: data.name,
-				type: data.type,
-				icon: data.icon,
-				partyKind: data.partyKind,
-				userId: user.id,
-			})
-			.returning({ id: categories.id });
+		const data = createCategoryInputSchema.parse(input);
+		const createdId = await createCategoryForUser(user.id, data);
 
 		revalidateForEntity("categories", user.id);
 
 		return {
 			success: true,
-			message: "Category criada com sucesso.",
-			data: created ? { id: created.id } : undefined,
+			message: "Categoria criada com sucesso.",
+			data: { id: createdId },
 		};
 	} catch (error) {
 		return handleActionError(error) as ActionResult<{ id: string }>;
@@ -80,53 +44,17 @@ export async function createCategoryAction(
 }
 
 export async function updateCategoryAction(
-	input: CategoryUpdateInput,
+	input: UpdateCategoryInput,
 ): Promise<ActionResult> {
 	try {
 		const user = await getUser();
-		const data = updateCategorySchema.parse(input);
-
-		// Buscar categoria antes de atualizar para verificar restrições
-		const categoria = await db.query.categories.findFirst({
-			columns: { id: true, name: true },
-			where: and(eq(categories.id, data.id), eq(categories.userId, user.id)),
-		});
-
-		if (!categoria) {
-			return {
-				success: false,
-				error: "Category não encontrada.",
-			};
-		}
-
-		// Bloquear edição das categories protegidas
-		const categoriasProtegidas = [
-			"Transferência interna",
-			"Saldo inicial",
-			"Pagamentos",
-		];
-		if (categoriasProtegidas.includes(categoria.name)) {
-			return {
-				success: false,
-				error: `A categoria '${categoria.name}' é protegida e não pode ser editada.`,
-			};
-		}
-
-		const [updated] = await db
-			.update(categories)
-			.set({
-				name: data.name,
-				type: data.type,
-				icon: data.icon,
-				partyKind: data.partyKind,
-			})
-			.where(and(eq(categories.id, data.id), eq(categories.userId, user.id)))
-			.returning();
+		const data = updateCategoryInputSchema.parse(input);
+		const updated = await updateCategoryForUser(user.id, data.id, data);
 
 		if (!updated) {
 			return {
 				success: false,
-				error: "Category não encontrada.",
+				error: "Categoria não encontrada.",
 			};
 		}
 
@@ -134,59 +62,59 @@ export async function updateCategoryAction(
 
 		return { success: true, message: "Categoria atualizada com sucesso." };
 	} catch (error) {
+		if (error instanceof CategoryServiceError) {
+			return { success: false, error: error.message };
+		}
+
 		return handleActionError(error);
 	}
 }
 
 export async function deleteCategoryAction(
-	input: CategoryDeleteInput,
+	input: DeleteCategoryInput,
 ): Promise<ActionResult> {
 	try {
 		const user = await getUser();
-		const data = deleteCategorySchema.parse(input);
-
-		// Buscar categoria antes de deletar para verificar restrições
-		const categoria = await db.query.categories.findFirst({
-			columns: { id: true, name: true },
-			where: and(eq(categories.id, data.id), eq(categories.userId, user.id)),
-		});
-
-		if (!categoria) {
-			return {
-				success: false,
-				error: "Category não encontrada.",
-			};
-		}
-
-		// Bloquear remoção das categories protegidas
-		const categoriasProtegidas = [
-			"Transferência interna",
-			"Saldo inicial",
-			"Pagamentos",
-		];
-		if (categoriasProtegidas.includes(categoria.name)) {
-			return {
-				success: false,
-				error: `A categoria '${categoria.name}' é protegida e não pode ser removida.`,
-			};
-		}
-
-		const [deleted] = await db
-			.delete(categories)
-			.where(and(eq(categories.id, data.id), eq(categories.userId, user.id)))
-			.returning({ id: categories.id });
+		const data = deleteCategoryInputSchema.parse(input);
+		const deleted = await deleteCategoryFromApiService(user.id, data.id);
 
 		if (!deleted) {
 			return {
 				success: false,
-				error: "Category não encontrada.",
+				error: "Categoria não encontrada.",
 			};
 		}
 
 		revalidateForEntity("categories", user.id);
 
-		return { success: true, message: "Category removida com sucesso." };
+		return { success: true, message: "Categoria removida com sucesso." };
 	} catch (error) {
+		if (error instanceof CategoryServiceError) {
+			return { success: false, error: error.message };
+		}
+
 		return handleActionError(error);
 	}
+}
+
+export async function upsertCategoryFromApi({
+	userId,
+	input,
+}: Parameters<typeof upsertCategoryFromApiService>[0]) {
+	return upsertCategoryFromApiService({ userId, input });
+}
+
+export async function updateCategoryFromApi({
+	userId,
+	categoryId,
+	input,
+}: Parameters<typeof updateCategoryFromApiService>[0]) {
+	return updateCategoryFromApiService({ userId, categoryId, input });
+}
+
+export async function deleteCategoryFromApi(
+	userId: string,
+	categoryId: string,
+) {
+	return deleteCategoryFromApiService(userId, categoryId);
 }
