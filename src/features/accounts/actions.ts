@@ -4,6 +4,10 @@ import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { categories, financialAccounts, transactions } from "@/db/schema";
 import {
+	updateAccountFromApi as updateAccountFromApiService,
+	upsertAccountFromApi as upsertAccountFromApiService,
+} from "@/features/accounts/lib/service";
+import {
 	ACCOUNT_BALANCE_ADJUSTMENT_NAME,
 	INITIAL_BALANCE_CATEGORY_NAME,
 	INITIAL_BALANCE_CONDITION,
@@ -629,4 +633,19 @@ export async function adjustAccountBalanceAction(
 	} catch (error) {
 		return handleActionError(error);
 	}
+}
+
+export async function upsertAccountFromApi({
+	userId,
+	input,
+}: Parameters<typeof upsertAccountFromApiService>[0]) {
+	return upsertAccountFromApiService({ userId, input });
+}
+
+export async function updateAccountFromApi({
+	userId,
+	accountId,
+	input,
+}: Parameters<typeof updateAccountFromApiService>[0]) {
+	return updateAccountFromApiService({ userId, accountId, input });
 }

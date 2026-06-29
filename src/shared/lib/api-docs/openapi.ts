@@ -41,6 +41,28 @@ const categoryExample = {
 	],
 } as const;
 
+const accountExample = {
+	id: "91ca7d4f-cf84-4eb4-8f1d-cab10df59c12",
+	name: "Nubank PJ",
+	accountType: "Conta corrente",
+	status: "Ativa",
+	note: "Conta principal",
+	logo: "Nubank",
+	initialBalance: 1500.25,
+	excludeFromBalance: false,
+	excludeInitialBalanceFromIncome: false,
+	createdAt: "2026-06-28T16:10:00.000Z",
+	integrations: [
+		{
+			sourceApp: "omie",
+			profileKey: "empresa-principal",
+			externalKey: "conta-123",
+			createdAt: "2026-06-28T16:10:00.000Z",
+			updatedAt: "2026-06-28T16:10:00.000Z",
+		},
+	],
+} as const;
+
 const inboxItemExample = {
 	sourceApp: "openmonetis-companion",
 	sourceAppName: "OpenMonetis Companion",
@@ -84,6 +106,22 @@ const categoryWriteExample = {
 		sourceApp: "omie",
 		profileKey: "empresa-principal",
 		externalKey: "categoria-321",
+	},
+} as const;
+
+const accountWriteExample = {
+	name: "Nubank PJ",
+	accountType: "Conta corrente",
+	status: "Ativa",
+	note: "Conta principal",
+	logo: "Nubank",
+	initialBalance: 1500.25,
+	excludeFromBalance: false,
+	excludeInitialBalanceFromIncome: false,
+	integration: {
+		sourceApp: "omie",
+		profileKey: "empresa-principal",
+		externalKey: "conta-123",
 	},
 } as const;
 
@@ -133,6 +171,10 @@ export function buildPublicOpenApiDocument() {
 			{
 				name: "Categories",
 				description: "Cadastro de categorias com suporte a binding externo.",
+			},
+			{
+				name: "Accounts",
+				description: "Cadastro de contas com suporte a binding externo.",
 			},
 			{
 				name: "Parties",
@@ -348,6 +390,119 @@ export function buildPublicOpenApiDocument() {
 						sourceApp: { type: "string", minLength: 1, maxLength: 255 },
 						profileKey: { type: ["string", "null"], maxLength: 255 },
 						externalKey: { type: "string", minLength: 1, maxLength: 255 },
+					},
+				},
+				AccountIntegrationPayload: {
+					type: "object",
+					required: ["sourceApp", "externalKey"],
+					properties: {
+						sourceApp: { type: "string", minLength: 1, maxLength: 255 },
+						profileKey: { type: ["string", "null"], maxLength: 255 },
+						externalKey: { type: "string", minLength: 1, maxLength: 255 },
+					},
+				},
+				AccountWriteRequest: {
+					type: "object",
+					required: [
+						"name",
+						"accountType",
+						"status",
+						"logo",
+						"initialBalance",
+						"excludeFromBalance",
+						"excludeInitialBalanceFromIncome",
+					],
+					properties: {
+						name: { type: "string", minLength: 1 },
+						accountType: { type: "string", minLength: 1 },
+						status: { type: "string", minLength: 1 },
+						note: { type: ["string", "null"] },
+						logo: { type: "string", minLength: 1, maxLength: 255 },
+						initialBalance: { type: "number" },
+						excludeFromBalance: { type: "boolean" },
+						excludeInitialBalanceFromIncome: { type: "boolean" },
+						integration: {
+							$ref: "#/components/schemas/AccountIntegrationPayload",
+						},
+					},
+				},
+				AccountIntegrationBinding: {
+					type: "object",
+					required: [
+						"sourceApp",
+						"profileKey",
+						"externalKey",
+						"createdAt",
+						"updatedAt",
+					],
+					properties: {
+						sourceApp: { type: "string" },
+						profileKey: { type: ["string", "null"] },
+						externalKey: { type: "string" },
+						createdAt: { type: "string", format: "date-time" },
+						updatedAt: { type: "string", format: "date-time" },
+					},
+				},
+				AccountItem: {
+					type: "object",
+					required: [
+						"id",
+						"name",
+						"accountType",
+						"status",
+						"note",
+						"logo",
+						"initialBalance",
+						"excludeFromBalance",
+						"excludeInitialBalanceFromIncome",
+						"createdAt",
+						"integrations",
+					],
+					properties: {
+						id: { type: "string", format: "uuid" },
+						name: { type: "string" },
+						accountType: { type: "string" },
+						status: { type: "string" },
+						note: { type: ["string", "null"] },
+						logo: { type: "string" },
+						initialBalance: { type: "number" },
+						excludeFromBalance: { type: "boolean" },
+						excludeInitialBalanceFromIncome: { type: "boolean" },
+						createdAt: { type: "string", format: "date-time" },
+						integrations: {
+							type: "array",
+							items: {
+								$ref: "#/components/schemas/AccountIntegrationBinding",
+							},
+						},
+					},
+				},
+				AccountsListResponse: {
+					type: "object",
+					required: ["items", "pagination"],
+					properties: {
+						items: {
+							type: "array",
+							items: { $ref: "#/components/schemas/AccountItem" },
+						},
+						pagination: {
+							type: "object",
+							required: ["page", "pageSize", "totalItems", "totalPages"],
+							properties: {
+								page: { type: "integer", minimum: 1 },
+								pageSize: { type: "integer", enum: [10, 20, 50, 100] },
+								totalItems: { type: "integer", minimum: 0 },
+								totalPages: { type: "integer", minimum: 1 },
+							},
+						},
+					},
+				},
+				AccountUpsertResponse: {
+					type: "object",
+					required: ["mode", "item"],
+					properties: {
+						mode: { type: "string", enum: ["created", "updated"] },
+						item: { $ref: "#/components/schemas/AccountItem" },
 					},
 				},
 				CategoryWriteRequest: {
@@ -1040,6 +1195,207 @@ export function buildPublicOpenApiDocument() {
 						},
 						"500": {
 							description: "Falha interna ao persistir a categoria.",
+							...buildJsonResponse(
+								{ $ref: "#/components/schemas/ErrorResponse" },
+								{
+									default: {
+										value: buildErrorExample("Algo deu errado."),
+									},
+								},
+							),
+						},
+					},
+				},
+			},
+			"/api/accounts": {
+				get: {
+					tags: ["Accounts"],
+					summary: "Lista contas",
+					description:
+						"Permite paginação, filtros simples e lookup pontual por binding externo usando `sourceApp` e `externalKey`.",
+					security: bearerSecurity,
+					parameters: [
+						{
+							name: "page",
+							in: "query",
+							description: "Página atual.",
+							schema: { type: "integer", minimum: 1, default: 1 },
+						},
+						{
+							name: "pageSize",
+							in: "query",
+							description: "Tamanho da página.",
+							schema: { type: "integer", enum: [10, 20, 50, 100], default: 20 },
+						},
+						{
+							name: "search",
+							in: "query",
+							description:
+								"Busca textual em nome, tipo da conta, status, observação e logo.",
+							schema: { type: "string" },
+						},
+						{
+							name: "status",
+							in: "query",
+							description: "Filtra por status da conta.",
+							schema: { type: "string" },
+						},
+						{
+							name: "accountType",
+							in: "query",
+							description: "Filtra por tipo da conta.",
+							schema: { type: "string" },
+						},
+						{
+							name: "sourceApp",
+							in: "query",
+							description: "Origem da integração para lookup por binding.",
+							schema: { type: "string" },
+						},
+						{
+							name: "profileKey",
+							in: "query",
+							description: "Perfil opcional do binding.",
+							schema: { type: "string" },
+						},
+						{
+							name: "externalKey",
+							in: "query",
+							description: "Identificador externo para lookup por binding.",
+							schema: { type: "string" },
+						},
+					],
+					responses: {
+						"200": {
+							description: "Lista paginada.",
+							...buildJsonResponse(
+								{ $ref: "#/components/schemas/AccountsListResponse" },
+								{
+									default: {
+										value: {
+											items: [accountExample],
+											pagination: {
+												page: 1,
+												pageSize: 20,
+												totalItems: 1,
+												totalPages: 1,
+											},
+										},
+									},
+								},
+							),
+						},
+						"400": {
+							description: "Parâmetros de busca inválidos.",
+							...buildJsonResponse(
+								{ $ref: "#/components/schemas/ErrorResponse" },
+								{
+									default: {
+										value: buildErrorExample(
+											"sourceApp e externalKey precisam ser informados juntos.",
+										),
+									},
+								},
+							),
+						},
+						"401": {
+							description: "Token Bearer inválido.",
+							...buildJsonResponse(
+								{ $ref: "#/components/schemas/ErrorResponse" },
+								{
+									default: {
+										value: buildErrorExample("Token inválido ou revogado"),
+									},
+								},
+							),
+						},
+						"500": {
+							description: "Falha interna ao buscar contas.",
+							...buildJsonResponse(
+								{ $ref: "#/components/schemas/ErrorResponse" },
+								{
+									default: {
+										value: buildErrorExample("Algo deu errado."),
+									},
+								},
+							),
+						},
+					},
+				},
+				post: {
+					tags: ["Accounts"],
+					summary: "Cria ou atualiza uma conta por binding externo",
+					description:
+						"Sem `integration`, sempre cria uma nova conta. Com `integration`, o endpoint faz upsert por `userId + sourceApp + profileKey + externalKey`.",
+					security: bearerSecurity,
+					requestBody: {
+						required: true,
+						content: {
+							"application/json": {
+								schema: {
+									$ref: "#/components/schemas/AccountWriteRequest",
+								},
+								examples: {
+									default: {
+										value: accountWriteExample,
+									},
+								},
+							},
+						},
+					},
+					responses: {
+						"200": {
+							description: "Conta atualizada pelo upsert de integração.",
+							...buildJsonResponse(
+								{ $ref: "#/components/schemas/AccountUpsertResponse" },
+								{
+									updated: {
+										value: {
+											mode: "updated",
+											item: accountExample,
+										},
+									},
+								},
+							),
+						},
+						"201": {
+							description: "Conta criada.",
+							...buildJsonResponse(
+								{ $ref: "#/components/schemas/AccountUpsertResponse" },
+								{
+									created: {
+										value: {
+											mode: "created",
+											item: accountExample,
+										},
+									},
+								},
+							),
+						},
+						"400": {
+							description: "Payload inválido.",
+							...buildJsonResponse(
+								{ $ref: "#/components/schemas/ErrorResponse" },
+								{
+									validation: {
+										value: buildErrorExample("Informe o nome da conta."),
+									},
+								},
+							),
+						},
+						"401": {
+							description: "Token Bearer inválido.",
+							...buildJsonResponse(
+								{ $ref: "#/components/schemas/ErrorResponse" },
+								{
+									default: {
+										value: buildErrorExample("Token inválido ou revogado"),
+									},
+								},
+							),
+						},
+						"500": {
+							description: "Falha interna ao persistir a conta.",
 							...buildJsonResponse(
 								{ $ref: "#/components/schemas/ErrorResponse" },
 								{

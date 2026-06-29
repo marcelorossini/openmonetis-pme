@@ -1,5 +1,11 @@
 import { and, eq, ilike, not, sql } from "drizzle-orm";
 import { financialAccounts, transactions } from "@/db/schema";
+
+export {
+	fetchAccountForApi,
+	fetchAccountsForApi,
+} from "@/features/accounts/lib/service";
+
 import { INITIAL_BALANCE_NOTE } from "@/shared/lib/accounts/constants";
 import { db } from "@/shared/lib/db";
 import { loadLogoOptions } from "@/shared/lib/logo/options";
