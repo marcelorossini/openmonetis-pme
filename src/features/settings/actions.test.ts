@@ -85,3 +85,11 @@ test("resetAccountAction revalida as áreas de clientes/fornecedores e títulos 
 		"O reset precisa revalidar a feature de contas a pagar/receber.",
 	);
 });
+
+test("resetUserAppData recria categorias padrão com helper compartilhado da seed", () => {
+	assert.match(
+		resetBlock,
+		/buildDefaultCategoryValues\(userId\)/u,
+		"O reset precisa reutilizar o helper compartilhado para recriar categorias com partyKind.",
+	);
+});

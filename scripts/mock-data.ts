@@ -34,7 +34,7 @@ import {
 	DEFAULT_CARD_BRANDS,
 	DEFAULT_CARD_STATUS,
 } from "@/shared/lib/cards/constants";
-import { DEFAULT_CATEGORIES } from "@/shared/lib/categories/defaults";
+import { buildDefaultCategoryValues } from "@/shared/lib/categories/defaults";
 import { db } from "@/shared/lib/db";
 import { INVOICE_PAYMENT_STATUS } from "@/shared/lib/invoices";
 import { loadLogoOptions } from "@/shared/lib/logo/options";
@@ -494,19 +494,12 @@ async function ensureCategories(userId: string) {
 	});
 
 	const existingNames = new Set(existing.map((item) => item.name));
-	const missingDefaults = DEFAULT_CATEGORIES.filter(
+	const missingDefaults = buildDefaultCategoryValues(userId).filter(
 		(category) => !existingNames.has(category.name),
 	);
 
 	if (missingDefaults.length > 0) {
-		await db.insert(categories).values(
-			missingDefaults.map((category) => ({
-				name: category.name,
-				type: category.type,
-				icon: category.icon,
-				userId,
-			})),
-		);
+		await db.insert(categories).values(missingDefaults);
 	}
 
 	const refreshed = await db.query.categories.findMany({
@@ -1129,15 +1122,15 @@ async function main() {
 		summary.notes += noteDefinitions.length;
 
 		const budgetDefinitions = [
-			{ categoryName: "Mercado", baseAmount: 1100 },
-			{ categoryName: "Restaurantes", baseAmount: 380 },
-			{ categoryName: "Transporte", baseAmount: 700 },
-			{ categoryName: "Moradia", baseAmount: 3600 },
-			{ categoryName: "Lazer", baseAmount: 450 },
+			{ categoryName: "Software e SaaS", baseAmount: 1100 },
+			{ categoryName: "Marketing e publicidade", baseAmount: 380 },
+			{ categoryName: "Transporte e deslocamento", baseAmount: 700 },
+			{ categoryName: "Aluguel e condomínio", baseAmount: 3600 },
+			{ categoryName: "Capacitação e cursos", baseAmount: 450 },
 			{ categoryName: "Assinaturas", baseAmount: 480 },
-			{ categoryName: "Saúde", baseAmount: 750 },
-			{ categoryName: "Delivery", baseAmount: 250 },
-			{ categoryName: "Vestuário", baseAmount: 350 },
+			{ categoryName: "Seguros", baseAmount: 750 },
+			{ categoryName: "Alimentação de trabalho", baseAmount: 250 },
+			{ categoryName: "Materiais de escritório", baseAmount: 350 },
 		] as const;
 
 		const budgetRows = periods.flatMap((period, index) =>
@@ -1170,22 +1163,22 @@ async function main() {
 		condition: "Recorrente",
 		paymentMethod: "Transferência bancária",
 		accountId: createdAccounts.itau,
-		categoryId: getCategoryId("Salário"),
+		categoryId: getCategoryId("Mensalidades e contratos"),
 		payerId: adminPayer.id,
 		recurrenceCount: options.months,
-		note: "Salário mensal recebido via TED.",
+		note: "Receita mensal recorrente de contratos de consultoria.",
 	});
 
-	// ── Despesas recorrentes (moradia, contas, assinaturas) ──
+	// ── Despesas recorrentes (estrutura, utilidades e assinaturas) ──
 	createRecords({
-		name: "Loft",
+		name: "Regus",
 		amount: 3200,
 		purchaseDate: dateForPeriodDay(firstPeriod, 5),
 		transactionType: "Despesa",
 		condition: "Recorrente",
 		paymentMethod: "Pix",
 		accountId: createdAccounts.itau,
-		categoryId: getCategoryId("Moradia"),
+		categoryId: getCategoryId("Aluguel e condomínio"),
 		payerId: adminPayer.id,
 		secondaryPayerId: createdPayers.mario,
 		isSplit: true,
@@ -1193,7 +1186,7 @@ async function main() {
 		secondarySplitAmount: 1600,
 		recurrenceCount: options.months,
 		dueDate: dateForPeriodDay(firstPeriod, 8),
-		note: "Aluguel do apartamento dividido com mario.",
+		note: "Coworking mensal dividido com mario.",
 	});
 
 	createRecords({
@@ -1204,11 +1197,11 @@ async function main() {
 		condition: "Recorrente",
 		paymentMethod: "Boleto",
 		accountId: createdAccounts.itau,
-		categoryId: getCategoryId("Internet"),
+		categoryId: getCategoryId("Internet e telefonia"),
 		payerId: adminPayer.id,
 		recurrenceCount: options.months,
 		dueDate: dateForPeriodDay(firstPeriod, 12),
-		note: "Internet 700 Mega da casa.",
+		note: "Link principal do escritório.",
 	});
 
 	createRecords({
@@ -1219,11 +1212,11 @@ async function main() {
 		condition: "Recorrente",
 		paymentMethod: "Cartão de crédito",
 		cardId: createdCards.ultravioleta.id,
-		categoryId: getCategoryId("Assinaturas"),
+		categoryId: getCategoryId("Internet e telefonia"),
 		payerId: adminPayer.id,
 		recurrenceCount: options.months,
 		cardMeta: createdCards.ultravioleta,
-		note: "Plano celular pós-pago.",
+		note: "Plano móvel corporativo.",
 	});
 
 	createRecords({
@@ -1257,7 +1250,7 @@ async function main() {
 	});
 
 	createRecords({
-		name: "Netflix",
+		name: "Slack",
 		amount: 55.9,
 		purchaseDate: dateForPeriodDay(firstPeriod, 9),
 		transactionType: "Despesa",
@@ -1268,11 +1261,11 @@ async function main() {
 		payerId: adminPayer.id,
 		recurrenceCount: options.months,
 		cardMeta: createdCards.ultravioleta,
-		note: "Plano padrão com anúncios.",
+		note: "Licença mensal do workspace.",
 	});
 
 	createRecords({
-		name: "Spotify",
+		name: "Google Workspace",
 		amount: 34.9,
 		purchaseDate: dateForPeriodDay(firstPeriod, 8),
 		transactionType: "Despesa",
@@ -1283,11 +1276,11 @@ async function main() {
 		payerId: adminPayer.id,
 		recurrenceCount: options.months,
 		cardMeta: createdCards.ultravioleta,
-		note: "Plano duo com mario.",
+		note: "Caixas de e-mail e drive da operação.",
 	});
 
 	createRecords({
-		name: "Disney Plus",
+		name: "Zoom",
 		amount: 33.9,
 		purchaseDate: dateForPeriodDay(firstPeriod, 12),
 		transactionType: "Despesa",
@@ -1298,26 +1291,26 @@ async function main() {
 		payerId: adminPayer.id,
 		recurrenceCount: options.months,
 		cardMeta: createdCards.ultravioleta,
-		note: "Streaming Disney+.",
+		note: "Licença de reuniões com clientes.",
 	});
 
 	createRecords({
-		name: "HBO Max",
+		name: "Conta Azul",
 		amount: 39.9,
 		purchaseDate: dateForPeriodDay(firstPeriod, 14),
 		transactionType: "Despesa",
 		condition: "Recorrente",
 		paymentMethod: "Cartão de crédito",
 		cardId: createdCards.ultravioleta.id,
-		categoryId: getCategoryId("Assinaturas"),
+		categoryId: getCategoryId("Software e SaaS"),
 		payerId: adminPayer.id,
 		recurrenceCount: options.months,
 		cardMeta: createdCards.ultravioleta,
-		note: "Streaming HBO Max.",
+		note: "Gestão financeira operacional.",
 	});
 
 	createRecords({
-		name: "YouTube",
+		name: "Canva",
 		amount: 28.9,
 		purchaseDate: dateForPeriodDay(firstPeriod, 7),
 		transactionType: "Despesa",
@@ -1328,7 +1321,7 @@ async function main() {
 		payerId: adminPayer.id,
 		recurrenceCount: options.months,
 		cardMeta: createdCards.ultravioleta,
-		note: "YouTube Premium individual.",
+		note: "Assinatura para materiais comerciais.",
 	});
 
 	createRecords({
@@ -1343,7 +1336,7 @@ async function main() {
 		payerId: adminPayer.id,
 		recurrenceCount: options.months,
 		cardMeta: createdCards.ultravioleta,
-		note: "Amazon Prime mensal.",
+		note: "Assinatura logística e mídia.",
 	});
 
 	createRecords({
@@ -1354,15 +1347,15 @@ async function main() {
 		condition: "Recorrente",
 		paymentMethod: "Cartão de crédito",
 		cardId: createdCards.ultravioleta.id,
-		categoryId: getCategoryId("Assinaturas"),
+		categoryId: getCategoryId("Software e SaaS"),
 		payerId: adminPayer.id,
 		recurrenceCount: options.months,
 		cardMeta: createdCards.ultravioleta,
-		note: "ChatGPT Plus.",
+		note: "Ferramenta de apoio à operação.",
 	});
 
 	createRecords({
-		name: "Apple",
+		name: "Dropbox",
 		amount: 14.9,
 		purchaseDate: dateForPeriodDay(firstPeriod, 17),
 		transactionType: "Despesa",
@@ -1373,7 +1366,7 @@ async function main() {
 		payerId: adminPayer.id,
 		recurrenceCount: options.months,
 		cardMeta: createdCards.ultravioleta,
-		note: "iCloud 200GB.",
+		note: "Armazenamento de arquivos compartilhados.",
 	});
 
 	createRecords({
@@ -1384,41 +1377,41 @@ async function main() {
 		condition: "Recorrente",
 		paymentMethod: "Cartão de crédito",
 		cardId: createdCards.ultravioleta.id,
-		categoryId: getCategoryId("Assinaturas"),
+		categoryId: getCategoryId("Software e SaaS"),
 		payerId: adminPayer.id,
 		recurrenceCount: options.months,
 		cardMeta: createdCards.ultravioleta,
-		note: "Notion plus mensal.",
+		note: "Base de conhecimento e projetos.",
 	});
 
 	createRecords({
-		name: "Smart Fit",
+		name: "Omie Academy",
 		amount: 129.9,
 		purchaseDate: dateForPeriodDay(firstPeriod, 11),
 		transactionType: "Despesa",
 		condition: "Recorrente",
 		paymentMethod: "Cartão de crédito",
 		cardId: createdCards.ultravioleta.id,
-		categoryId: getCategoryId("Saúde"),
+		categoryId: getCategoryId("Capacitação e cursos"),
 		payerId: adminPayer.id,
 		recurrenceCount: options.months,
 		cardMeta: createdCards.ultravioleta,
-		note: "Plano black mensal.",
+		note: "Treinamento mensal da equipe.",
 	});
 
 	createRecords({
-		name: "Amil",
+		name: "SulAmérica",
 		amount: 489,
 		purchaseDate: dateForPeriodDay(firstPeriod, 4),
 		transactionType: "Despesa",
 		condition: "Recorrente",
 		paymentMethod: "Boleto",
 		accountId: createdAccounts.itau,
-		categoryId: getCategoryId("Saúde"),
+		categoryId: getCategoryId("Seguros"),
 		payerId: adminPayer.id,
 		recurrenceCount: options.months,
 		dueDate: dateForPeriodDay(firstPeriod, 10),
-		note: "Plano de saúde com coparticipação.",
+		note: "Seguro empresarial com assistência.",
 	});
 
 	createRecords({
@@ -1429,26 +1422,26 @@ async function main() {
 		condition: "Recorrente",
 		paymentMethod: "Boleto",
 		accountId: createdAccounts.itau,
-		categoryId: getCategoryId("Transporte"),
+		categoryId: getCategoryId("Seguros"),
 		payerId: adminPayer.id,
 		recurrenceCount: options.months,
 		dueDate: dateForPeriodDay(firstPeriod, 15),
-		note: "Seguro auto mensal.",
+		note: "Seguro de responsabilidade operacional.",
 	});
 
 	createRecords({
-		name: "Condomínio Loft",
+		name: "Condomínio Regus",
 		amount: 720,
 		purchaseDate: dateForPeriodDay(firstPeriod, 1),
 		transactionType: "Despesa",
 		condition: "Recorrente",
 		paymentMethod: "Pix",
 		accountId: createdAccounts.itau,
-		categoryId: getCategoryId("Moradia"),
+		categoryId: getCategoryId("Aluguel e condomínio"),
 		payerId: adminPayer.id,
 		recurrenceCount: options.months,
 		dueDate: dateForPeriodDay(firstPeriod, 10),
-		note: "Taxa condominial mensal.",
+		note: "Taxa condominial do coworking.",
 	});
 
 	// ── Despesas e receitas variáveis (loop mensal) ──
@@ -1469,53 +1462,53 @@ async function main() {
 		const raiaAmount = 72 + index * 5.8;
 		const investmentYield = 84 + index * 6.4;
 
-		// Mercado — estoura o orçamento
+		// Software e SaaS — estoura o orçamento
 		createRecords({
-			name: "Carrefour",
+			name: "AWS",
 			amount: carrefourAmount,
 			purchaseDate: dateForPeriodDay(period, 6),
 			transactionType: "Despesa",
 			condition: "À vista",
 			paymentMethod: "Pix",
 			accountId: createdAccounts.nubank,
-			categoryId: getCategoryId("Mercado"),
+			categoryId: getCategoryId("Software e SaaS"),
 			payerId: adminPayer.id,
 			secondaryPayerId: createdPayers.mario,
 			isSplit: true,
 			primarySplitAmount: carrefourAmount / 2,
 			secondarySplitAmount: carrefourAmount / 2,
-			note: "Compra grande do mês dividida com mario.",
+			note: "Infraestrutura em nuvem dividida com mario.",
 		});
 
 		createRecords({
-			name: "Pão de Açúcar",
+			name: "OpenRouter",
 			amount: paoAcucarAmount,
 			purchaseDate: dateForPeriodDay(period, 13),
 			transactionType: "Despesa",
 			condition: "À vista",
 			paymentMethod: "Cartão de crédito",
 			cardId: createdCards.interblack.id,
-			categoryId: getCategoryId("Mercado"),
+			categoryId: getCategoryId("Software e SaaS"),
 			payerId: adminPayer.id,
 			cardMeta: createdCards.interblack,
-			note: "Hortifruti e frios da semana.",
+			note: "Consumo complementar de APIs.",
 		});
 
 		createRecords({
-			name: "Assaí",
+			name: "Vercel",
 			amount: assaiAmount,
 			purchaseDate: dateForPeriodDay(period, 22),
 			transactionType: "Despesa",
 			condition: "À vista",
 			paymentMethod: "Cartão de crédito",
 			cardId: createdCards.interblack.id,
-			categoryId: getCategoryId("Mercado"),
+			categoryId: getCategoryId("Software e SaaS"),
 			payerId: adminPayer.id,
 			cardMeta: createdCards.interblack,
-			note: "Atacado mensal: bebidas e itens não-perecíveis.",
+			note: "Hospedagem e bandwidth do mês.",
 		});
 
-		// Transporte
+		// Transporte e deslocamento
 		createRecords({
 			name: "Uber",
 			amount: uberAmount,
@@ -1524,7 +1517,7 @@ async function main() {
 			condition: "À vista",
 			paymentMethod: "Pix",
 			accountId: createdAccounts["mercado-pago"],
-			categoryId: getCategoryId("Transporte"),
+			categoryId: getCategoryId("Transporte e deslocamento"),
 			payerId: adminPayer.id,
 			note: "Corridas do dia a dia.",
 		});
@@ -1537,7 +1530,7 @@ async function main() {
 			condition: "À vista",
 			paymentMethod: "Pix",
 			accountId: createdAccounts["mercado-pago"],
-			categoryId: getCategoryId("Transporte"),
+			categoryId: getCategoryId("Transporte e deslocamento"),
 			payerId: adminPayer.id,
 			note: "Corridas e idas ao aeroporto.",
 		});
@@ -1550,7 +1543,7 @@ async function main() {
 			condition: "À vista",
 			paymentMethod: "Cartão de débito",
 			accountId: createdAccounts.itau,
-			categoryId: getCategoryId("Transporte"),
+			categoryId: getCategoryId("Transporte e deslocamento"),
 			payerId: adminPayer.id,
 			note: "Abastecimento principal do mês.",
 		});
@@ -1563,12 +1556,12 @@ async function main() {
 			condition: "À vista",
 			paymentMethod: "Cartão de débito",
 			accountId: createdAccounts.itau,
-			categoryId: getCategoryId("Transporte"),
+			categoryId: getCategoryId("Transporte e deslocamento"),
 			payerId: adminPayer.id,
 			note: "Reabastecimento de fim de mês.",
 		});
 
-		// Delivery
+		// Alimentação de trabalho
 		createRecords({
 			name: "iFood",
 			amount: ifoodAmount,
@@ -1577,10 +1570,10 @@ async function main() {
 			condition: "À vista",
 			paymentMethod: "Cartão de crédito",
 			cardId: createdCards.ultravioleta.id,
-			categoryId: getCategoryId("Delivery"),
+			categoryId: getCategoryId("Alimentação de trabalho"),
 			payerId: adminPayer.id,
 			cardMeta: createdCards.ultravioleta,
-			note: "Pedidos de jantar.",
+			note: "Refeição em dia de fechamento.",
 		});
 
 		createRecords({
@@ -1591,78 +1584,78 @@ async function main() {
 			condition: "À vista",
 			paymentMethod: "Cartão de crédito",
 			cardId: createdCards.ultravioleta.id,
-			categoryId: getCategoryId("Delivery"),
+			categoryId: getCategoryId("Alimentação de trabalho"),
 			payerId: adminPayer.id,
 			cardMeta: createdCards.ultravioleta,
-			note: "Pedidos de fim de semana.",
+			note: "Reunião externa com cliente.",
 		});
 
-		// Restaurantes — estoura o orçamento
+		// Marketing e publicidade — estoura o orçamento
 		createRecords({
-			name: "McDonald's",
+			name: "Meta Ads",
 			amount: mcdonaldsAmount,
 			purchaseDate: dateForPeriodDay(period, 16),
 			transactionType: "Despesa",
 			condition: "À vista",
 			paymentMethod: "Pré-Pago | VR/VA",
 			accountId: createdAccounts["mercado-pago"],
-			categoryId: getCategoryId("Restaurantes"),
+			categoryId: getCategoryId("Marketing e publicidade"),
 			payerId: adminPayer.id,
-			note: "Almoço rápido no intervalo.",
+			note: "Campanha always-on de aquisição.",
 		});
 
 		createRecords({
-			name: "Starbucks",
+			name: "Google Ads",
 			amount: starbucksAmount,
 			purchaseDate: dateForPeriodDay(period, 11),
 			transactionType: "Despesa",
 			condition: "À vista",
 			paymentMethod: "Cartão de crédito",
 			cardId: createdCards.ultravioleta.id,
-			categoryId: getCategoryId("Restaurantes"),
+			categoryId: getCategoryId("Marketing e publicidade"),
 			payerId: adminPayer.id,
 			cardMeta: createdCards.ultravioleta,
-			note: "Café e snack do trabalho.",
+			note: "Busca paga para geração de demanda.",
 		});
 
 		createRecords({
-			name: "Burger King",
+			name: "LinkedIn Ads",
 			amount: burgerKingAmount,
 			purchaseDate: dateForPeriodDay(period, 24),
 			transactionType: "Despesa",
 			condition: "À vista",
 			paymentMethod: "Pré-Pago | VR/VA",
 			accountId: createdAccounts["mercado-pago"],
-			categoryId: getCategoryId("Restaurantes"),
+			categoryId: getCategoryId("Marketing e publicidade"),
 			payerId: adminPayer.id,
-			note: "Jantar rápido.",
+			note: "Impulsionamento de conteúdo B2B.",
 		});
 
-		// Saúde / farmácia
+		// Capacitação e cursos
 		createRecords({
-			name: "Drogasil",
+			name: "Alura",
 			amount: drogasilAmount,
 			purchaseDate: dateForPeriodDay(period, 12),
 			transactionType: "Despesa",
 			condition: "À vista",
 			paymentMethod: "Cartão de débito",
 			accountId: createdAccounts.nubank,
-			categoryId: getCategoryId("Saúde"),
+			categoryId: getCategoryId("Capacitação e cursos"),
 			payerId: adminPayer.id,
-			note: "Remédios e itens de farmácia.",
+			note: "Trilha técnica da equipe.",
 		});
 
 		createRecords({
-			name: "Raia",
+			name: "Udemy",
 			amount: raiaAmount,
 			purchaseDate: dateForPeriodDay(period, 26),
 			transactionType: "Despesa",
 			condition: "À vista",
 			paymentMethod: "Cartão de débito",
 			accountId: createdAccounts.nubank,
-			categoryId: getCategoryId("Saúde"),
+			categoryId: getCategoryId("Capacitação e cursos"),
 			payerId: adminPayer.id,
-			note: "Remédios e suplementos.",
+			note: "Cursos complementares e reciclagem.",
 		});
 
 		// Investimentos (rendimento)
@@ -1689,10 +1682,10 @@ async function main() {
 				condition: "À vista",
 				paymentMethod: "Cartão de crédito",
 				cardId: createdCards.itaucard.id,
-				categoryId: getCategoryId("Compras"),
+				categoryId: getCategoryId("Equipamentos e informática"),
 				payerId: adminPayer.id,
 				cardMeta: createdCards.itaucard,
-				note: "Itens de casa e pequenos eletrônicos.",
+				note: "Periféricos e acessórios do escritório.",
 			});
 		}
 
@@ -1705,10 +1698,10 @@ async function main() {
 				condition: "À vista",
 				paymentMethod: "Cartão de crédito",
 				cardId: createdCards.itaucard.id,
-				categoryId: getCategoryId("Compras"),
+				categoryId: getCategoryId("Materiais de escritório"),
 				payerId: adminPayer.id,
 				cardMeta: createdCards.itaucard,
-				note: "Compras avulsas no marketplace.",
+				note: "Reposição avulsa de insumos.",
 			});
 		}
 
@@ -1736,10 +1729,10 @@ async function main() {
 				condition: "À vista",
 				paymentMethod: "Cartão de crédito",
 				cardId: createdCards.itaucard.id,
-				categoryId: getCategoryId("Restaurantes"),
+				categoryId: getCategoryId("Serviços terceirizados"),
 				payerId: adminPayer.id,
 				cardMeta: createdCards.itaucard,
-				note: "Jantar de fim de semana.",
+				note: "Designer parceiro para campanha.",
 			});
 		}
 
@@ -1752,26 +1745,26 @@ async function main() {
 				condition: "À vista",
 				paymentMethod: "Cartão de crédito",
 				cardId: createdCards.itaucard.id,
-				categoryId: getCategoryId("Restaurantes"),
+				categoryId: getCategoryId("Serviços terceirizados"),
 				payerId: adminPayer.id,
 				cardMeta: createdCards.itaucard,
-				note: "Almoço de domingo.",
+				note: "Edição de vídeo terceirizada.",
 			});
 		}
 
 		if (index % 2 === 0) {
 			createRecords({
-				name: "Cinemark",
+				name: "RD Station",
 				amount: 142 + index * 8.5,
 				purchaseDate: dateForPeriodDay(period, 21),
 				transactionType: "Despesa",
 				condition: "À vista",
 				paymentMethod: "Cartão de crédito",
 				cardId: createdCards.itaucard.id,
-				categoryId: getCategoryId("Lazer"),
+				categoryId: getCategoryId("Marketing e publicidade"),
 				payerId: adminPayer.id,
 				cardMeta: createdCards.itaucard,
-				note: "Sessão IMAX para dois.",
+				note: "Automação de nutrição e CRM.",
 			});
 		}
 	}
@@ -1785,11 +1778,11 @@ async function main() {
 		condition: "Parcelado",
 		paymentMethod: "Cartão de crédito",
 		cardId: createdCards.itaucard.id,
-		categoryId: getCategoryId("Compras"),
+		categoryId: getCategoryId("Equipamentos e informática"),
 		payerId: adminPayer.id,
 		installmentCount: 12,
 		cardMeta: createdCards.itaucard,
-		note: "iPhone 16 Pro 256GB, 12x sem juros.",
+		note: "Notebook principal da operação em 12x.",
 	});
 
 	createRecords({
@@ -1800,11 +1793,11 @@ async function main() {
 		condition: "Parcelado",
 		paymentMethod: "Cartão de crédito",
 		cardId: createdCards.itaucard.id,
-		categoryId: getCategoryId("Compras"),
+		categoryId: getCategoryId("Equipamentos e informática"),
 		payerId: adminPayer.id,
 		installmentCount: 10,
 		cardMeta: createdCards.itaucard,
-		note: "Smart TV QLED 65 polegadas.",
+		note: "Monitor ultrawide para produtividade.",
 	});
 
 	createRecords({
@@ -1815,11 +1808,11 @@ async function main() {
 		condition: "Parcelado",
 		paymentMethod: "Cartão de crédito",
 		cardId: createdCards.itaucard.id,
-		categoryId: getCategoryId("Compras"),
+		categoryId: getCategoryId("Equipamentos e informática"),
 		payerId: adminPayer.id,
 		installmentCount: 10,
 		cardMeta: createdCards.itaucard,
-		note: "Notebook Dell XPS 13 para o home office.",
+		note: "Estação de trabalho adicional.",
 	});
 
 	createRecords({
@@ -1830,11 +1823,11 @@ async function main() {
 		condition: "Parcelado",
 		paymentMethod: "Cartão de crédito",
 		cardId: createdCards.itaucard.id,
-		categoryId: getCategoryId("Moradia"),
+		categoryId: getCategoryId("Materiais de escritório"),
 		payerId: adminPayer.id,
 		installmentCount: 5,
 		cardMeta: createdCards.itaucard,
-		note: "Geladeira inverter para o apartamento.",
+		note: "Mobiliário para a sala de reuniões.",
 	});
 
 	createRecords({
@@ -1845,7 +1838,7 @@ async function main() {
 		condition: "Parcelado",
 		paymentMethod: "Cartão de crédito",
 		cardId: createdCards.ultravioleta.id,
-		categoryId: getCategoryId("Viagem"),
+		categoryId: getCategoryId("Viagens e hospedagem"),
 		payerId: adminPayer.id,
 		secondaryPayerId: createdPayers.eduardo,
 		isSplit: true,
@@ -1864,7 +1857,7 @@ async function main() {
 		condition: "Parcelado",
 		paymentMethod: "Cartão de crédito",
 		cardId: createdCards.ultravioleta.id,
-		categoryId: getCategoryId("Viagem"),
+		categoryId: getCategoryId("Viagens e hospedagem"),
 		payerId: adminPayer.id,
 		installmentCount: 6,
 		cardMeta: createdCards.ultravioleta,
@@ -1880,55 +1873,55 @@ async function main() {
 		condition: "À vista",
 		paymentMethod: "Cartão de crédito",
 		cardId: createdCards.ultravioleta.id,
-		categoryId: getCategoryId("Compras"),
+		categoryId: getCategoryId("Equipamentos e informática"),
 		payerId: adminPayer.id,
 		cardMeta: createdCards.ultravioleta,
-		note: "Apple Watch Series 10.",
+		note: "Headset premium para calls.",
 	});
 
 	createRecords({
-		name: "Zara",
+		name: "Kalunga",
 		amount: 689.8,
 		purchaseDate: dateForPeriodDay(middlePeriod, 17),
 		transactionType: "Despesa",
 		condition: "À vista",
 		paymentMethod: "Cartão de crédito",
 		cardId: createdCards.ultravioleta.id,
-		categoryId: getCategoryId("Vestuário"),
+		categoryId: getCategoryId("Materiais de escritório"),
 		payerId: adminPayer.id,
 		cardMeta: createdCards.ultravioleta,
-		note: "Coleção de inverno.",
+		note: "Cadernos, blocos e suprimentos.",
 	});
 
 	createRecords({
-		name: "Renner",
+		name: "Amazon Business",
 		amount: 412.5,
 		purchaseDate: dateForPeriodDay(thirdPeriod, 9),
 		transactionType: "Despesa",
 		condition: "À vista",
 		paymentMethod: "Cartão de crédito",
 		cardId: createdCards.ultravioleta.id,
-		categoryId: getCategoryId("Vestuário"),
+		categoryId: getCategoryId("Materiais de escritório"),
 		payerId: adminPayer.id,
 		cardMeta: createdCards.ultravioleta,
-		note: "Camisas e calças básicas.",
+		note: "Reposição de periféricos e cabos.",
 	});
 
 	createRecords({
-		name: "Nike",
+		name: "Logitech",
 		amount: 899.9,
 		purchaseDate: dateForPeriodDay(firstPeriod, 23),
 		transactionType: "Despesa",
 		condition: "À vista",
 		paymentMethod: "Cartão de crédito",
 		cardId: createdCards.ultravioleta.id,
-		categoryId: getCategoryId("Vestuário"),
+		categoryId: getCategoryId("Equipamentos e informática"),
 		payerId: adminPayer.id,
 		cardMeta: createdCards.ultravioleta,
-		note: "Tênis Air Zoom para academia.",
+		note: "Mouse e teclado sem fio.",
 	});
 
-	// ── Educação, presentes, lazer ──
+	// ── Cursos, brindes e apoio comercial ──
 	createRecords({
 		name: "Alura",
 		amount: 1499.9,
@@ -1937,34 +1930,34 @@ async function main() {
 		condition: "À vista",
 		paymentMethod: "Cartão de crédito",
 		cardId: createdCards.ultravioleta.id,
-		categoryId: getCategoryId("Educação"),
+		categoryId: getCategoryId("Capacitação e cursos"),
 		payerId: adminPayer.id,
 		cardMeta: createdCards.ultravioleta,
 		note: "Plano anual de desenvolvimento.",
 	});
 
 	createRecords({
-		name: "Amazon",
+		name: "Printi",
 		amount: 189,
 		purchaseDate: dateForPeriodDay(thirdPeriod, 11),
 		transactionType: "Despesa",
 		condition: "À vista",
 		paymentMethod: "Pix",
 		accountId: createdAccounts.nubank,
-		categoryId: getCategoryId("Presentes"),
+		categoryId: getCategoryId("Marketing e publicidade"),
 		payerId: adminPayer.id,
-		note: "Presente de aniversário do Eduardo.",
+		note: "Brindes e materiais promocionais.",
 	});
 
 	createRecords({
-		name: "Eventim",
+		name: "Freela Motion",
 		amount: 480,
 		purchaseDate: dateForPeriodDay(middlePeriod, 8),
 		transactionType: "Despesa",
 		condition: "Parcelado",
 		paymentMethod: "Cartão de crédito",
 		cardId: createdCards.ultravioleta.id,
-		categoryId: getCategoryId("Lazer"),
+		categoryId: getCategoryId("Serviços terceirizados"),
 		payerId: adminPayer.id,
 		secondaryPayerId: createdPayers.mario,
 		isSplit: true,
@@ -1972,22 +1965,22 @@ async function main() {
 		secondarySplitAmount: 240,
 		installmentCount: 3,
 		cardMeta: createdCards.ultravioleta,
-		note: "Ingressos para show, divididos com mario.",
+		note: "Animação curta para campanha, dividida com mario.",
 	});
 
-	// ── Saúde / consultas ──
+	// ── Seguros e reembolsos ──
 	createRecords({
-		name: "Hapvida",
+		name: "Porto Seguro Saúde",
 		amount: 320,
 		purchaseDate: dateForPeriodDay(middlePeriod, 9),
 		transactionType: "Despesa",
 		condition: "À vista",
 		paymentMethod: "Boleto",
 		accountId: createdAccounts.itau,
-		categoryId: getCategoryId("Saúde"),
+		categoryId: getCategoryId("Seguros"),
 		payerId: adminPayer.id,
 		dueDate: dateForPeriodDay(middlePeriod, 17),
-		note: "Consulta odontológica particular.",
+		note: "Franquia complementar do seguro empresarial.",
 	});
 
 	createRecords({
@@ -2012,10 +2005,10 @@ async function main() {
 		condition: "À vista",
 		paymentMethod: "Boleto",
 		accountId: createdAccounts.itau,
-		categoryId: getCategoryId("Transporte"),
+		categoryId: getCategoryId("Impostos e taxas"),
 		payerId: adminPayer.id,
 		dueDate: dateForPeriodDay(lastPeriod, 25),
-		note: "IPVA 2026 em aberto.",
+		note: "Taxa anual em aberto.",
 		settlementBehavior: "open",
 	});
 
@@ -2028,10 +2021,10 @@ async function main() {
 		condition: "À vista",
 		paymentMethod: "Cartão de crédito",
 		cardId: createdCards.interblack.id,
-		categoryId: getCategoryId("Moradia"),
+		categoryId: getCategoryId("Equipamentos e informática"),
 		payerId: adminPayer.id,
 		cardMeta: createdCards.interblack,
-		note: "Air fryer e cafeteira para a cozinha.",
+		note: "Compra acima da média para expansão do setup.",
 	});
 
 	// ── Transferências internas entre contas ──

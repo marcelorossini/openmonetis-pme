@@ -67,6 +67,7 @@ Desde que assumiu a condução do `openmonetis-pe`, o fork ganhou um direcioname
 - API pública autenticada por token para **cadastro de contas** em `/api/accounts`
 - API pública autenticada por token para **cadastro de clientes e fornecedores** em `/api/parties`
 - API pública autenticada por token para **cadastro de categorias** em `/api/categories`
+- seed inicial de categorias voltada a pequenas empresas de serviços e consultoria, incluindo vínculos pré-configurados de cliente e fornecedor nas categorias mais óbvias
 - catálogo público de endpoints com **Scalar** em `/api-docs` e spec em `/openapi.json`
 - melhorias contínuas em UI, relatórios, importação, preferências, anexos e fluxo operacional do fork
 

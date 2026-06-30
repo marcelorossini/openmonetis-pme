@@ -11,42 +11,160 @@ type DefaultCategory = {
 	partyKind?: CategoryPartyKind | null;
 };
 
+type DefaultCategoryInsert = {
+	name: string;
+	type: CategoryType;
+	icon: string | null;
+	partyKind: CategoryPartyKind | null;
+	userId: string;
+};
+
 export const DEFAULT_CATEGORIES: DefaultCategory[] = [
 	// Despesas
-	{ name: "Alimentação", type: "despesa", icon: "RiRestaurant2Line" },
-	{ name: "Transporte", type: "despesa", icon: "RiBusLine" },
-	{ name: "Moradia", type: "despesa", icon: "RiHomeLine" },
-	{ name: "Saúde", type: "despesa", icon: "RiStethoscopeLine" },
-	{ name: "Educação", type: "despesa", icon: "RiBook2Line" },
-	{ name: "Lazer", type: "despesa", icon: "RiGamepadLine" },
-	{ name: "Compras", type: "despesa", icon: "RiShoppingBagLine" },
-	{ name: "Assinaturas", type: "despesa", icon: "RiServiceLine" },
-	{ name: "Pets", type: "despesa", icon: "RiBearSmileLine" },
-	{ name: "Mercado", type: "despesa", icon: "RiShoppingBasketLine" },
-	{ name: "Restaurantes", type: "despesa", icon: "RiRestaurantLine" },
-	{ name: "Delivery", type: "despesa", icon: "RiMotorbikeLine" },
-	{ name: "Energia e água", type: "despesa", icon: "RiFlashlightLine" },
-	{ name: "Internet", type: "despesa", icon: "RiWifiLine" },
-	{ name: "Vestuário", type: "despesa", icon: "RiTShirtLine" },
-	{ name: "Viagem", type: "despesa", icon: "RiFlightTakeoffLine" },
-	{ name: "Presentes", type: "despesa", icon: "RiGiftLine" },
+	{ name: "Pró-labore", type: "despesa", icon: "RiWallet3Line" },
+	{ name: "Folha e encargos", type: "despesa", icon: "RiGroupLine" },
+	{
+		name: "Impostos e taxas",
+		type: "despesa",
+		icon: "RiArticleLine",
+		partyKind: "fornecedor",
+	},
+	{
+		name: "Contabilidade",
+		type: "despesa",
+		icon: "RiCalculatorLine",
+		partyKind: "fornecedor",
+	},
+	{
+		name: "Serviços terceirizados",
+		type: "despesa",
+		icon: "RiBriefcase4Line",
+		partyKind: "fornecedor",
+	},
+	{
+		name: "Marketing e publicidade",
+		type: "despesa",
+		icon: "RiMegaphoneLine",
+		partyKind: "fornecedor",
+	},
+	{
+		name: "Software e SaaS",
+		type: "despesa",
+		icon: "RiWindowLine",
+		partyKind: "fornecedor",
+	},
+	{
+		name: "Internet e telefonia",
+		type: "despesa",
+		icon: "RiWifiLine",
+		partyKind: "fornecedor",
+	},
+	{
+		name: "Equipamentos e informática",
+		type: "despesa",
+		icon: "RiComputerLine",
+		partyKind: "fornecedor",
+	},
+	{
+		name: "Materiais de escritório",
+		type: "despesa",
+		icon: "RiInboxArchiveLine",
+		partyKind: "fornecedor",
+	},
+	{
+		name: "Aluguel e condomínio",
+		type: "despesa",
+		icon: "RiHomeOfficeLine",
+		partyKind: "fornecedor",
+	},
+	{
+		name: "Energia e água",
+		type: "despesa",
+		icon: "RiFlashlightLine",
+		partyKind: "fornecedor",
+	},
+	{
+		name: "Serviços bancários",
+		type: "despesa",
+		icon: "RiBankCardLine",
+		partyKind: "fornecedor",
+	},
+	{
+		name: "Seguros",
+		type: "despesa",
+		icon: "RiShieldCheckLine",
+		partyKind: "fornecedor",
+	},
+	{
+		name: "Capacitação e cursos",
+		type: "despesa",
+		icon: "RiGraduationCapLine",
+		partyKind: "fornecedor",
+	},
+	{
+		name: "Viagens e hospedagem",
+		type: "despesa",
+		icon: "RiHotelLine",
+		partyKind: "fornecedor",
+	},
+	{
+		name: "Transporte e deslocamento",
+		type: "despesa",
+		icon: "RiBusLine",
+		partyKind: "fornecedor",
+	},
+	{
+		name: "Alimentação de trabalho",
+		type: "despesa",
+		icon: "RiRestaurant2Line",
+		partyKind: "fornecedor",
+	},
+	{
+		name: "Assinaturas",
+		type: "despesa",
+		icon: "RiServiceLine",
+		partyKind: "fornecedor",
+	},
 	{ name: "Pagamentos", type: "despesa", icon: "RiBillLine" },
 	{ name: "Outras despesas", type: "despesa", icon: "RiMore2Line" },
 
 	// Receitas
-	{ name: "Salário", type: "receita", icon: "RiWallet3Line" },
 	{
 		name: "Serviços Prestados",
 		type: "receita",
 		icon: "RiUserStarLine",
 		partyKind: "cliente",
 	},
-	{ name: "Rendimentos", type: "receita", icon: "RiFundsLine" },
+	{
+		name: "Mensalidades e contratos",
+		type: "receita",
+		icon: "RiFileTextLine",
+		partyKind: "cliente",
+	},
+	{
+		name: "Vendas",
+		type: "receita",
+		icon: "RiShoppingCartLine",
+		partyKind: "cliente",
+	},
+	{
+		name: "Comissões",
+		type: "receita",
+		icon: "RiMedalLine",
+		partyKind: "cliente",
+	},
+	{
+		name: "Reembolso",
+		type: "receita",
+		icon: "RiRefundLine",
+		partyKind: "cliente",
+	},
+	{
+		name: "Rendimentos financeiros",
+		type: "receita",
+		icon: "RiFundsLine",
+	},
 	{ name: "Investimentos", type: "receita", icon: "RiStockLine" },
-	{ name: "Vendas", type: "receita", icon: "RiShoppingCartLine" },
-	{ name: "Prêmios", type: "receita", icon: "RiMedalLine" },
-	{ name: "Reembolso", type: "receita", icon: "RiRefundLine" },
-	{ name: "Aluguel recebido", type: "receita", icon: "RiBuilding2Line" },
 	{ name: "Outras receitas", type: "receita", icon: "RiMore2Line" },
 	{ name: "Saldo inicial", type: "receita", icon: "RiWallet2Line" },
 
@@ -57,6 +175,18 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
 		icon: "RiArrowLeftRightLine",
 	},
 ];
+
+export function buildDefaultCategoryValues(
+	userId: string,
+): DefaultCategoryInsert[] {
+	return DEFAULT_CATEGORIES.map((category) => ({
+		name: category.name,
+		type: category.type,
+		icon: category.icon,
+		partyKind: category.partyKind ?? null,
+		userId,
+	}));
+}
 
 /**
  * Seeds default categories for a new user
@@ -80,13 +210,5 @@ export async function seedDefaultCategoriesForUser(userId: string | undefined) {
 		return;
 	}
 
-	await db.insert(categories).values(
-		DEFAULT_CATEGORIES.map((category) => ({
-			name: category.name,
-			type: category.type,
-			icon: category.icon,
-			partyKind: category.partyKind ?? null,
-			userId,
-		})),
-	);
+	await db.insert(categories).values(buildDefaultCategoryValues(userId));
 }

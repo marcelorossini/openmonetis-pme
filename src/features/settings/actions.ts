@@ -22,7 +22,7 @@ import {
 	APP_BRANDING_CACHE_TAG,
 	APP_BRANDING_ID,
 } from "@/shared/lib/branding/queries";
-import { DEFAULT_CATEGORIES } from "@/shared/lib/categories/defaults";
+import { buildDefaultCategoryValues } from "@/shared/lib/categories/defaults";
 import { db, schema } from "@/shared/lib/db";
 import { normalizeOptionalText } from "@/shared/lib/inbox-integrations/mapping";
 import { reprocessPendingInboxItem } from "@/shared/lib/inbox-integrations/service";
@@ -197,15 +197,10 @@ async function resetUserAppData(
 			.delete(schema.categories)
 			.where(eq(schema.categories.userId, userId));
 
-		if (DEFAULT_CATEGORIES.length > 0) {
-			await tx.insert(schema.categories).values(
-				DEFAULT_CATEGORIES.map((category) => ({
-					name: category.name,
-					type: category.type,
-					icon: category.icon,
-					userId,
-				})),
-			);
+		const defaultCategoryValues = buildDefaultCategoryValues(userId);
+
+		if (defaultCategoryValues.length > 0) {
+			await tx.insert(schema.categories).values(defaultCategoryValues);
 		}
 
 		await tx.insert(schema.payers).values({
